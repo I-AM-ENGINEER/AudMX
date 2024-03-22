@@ -1,6 +1,6 @@
 # import time
 from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
-from PyQt5.QtCore import QIODevice, QTimer, pyqtSignal, QObject
+from PyQt5.QtCore import QIODevice, pyqtSignal, QObject
 
 
 class seriall(QObject):
@@ -25,24 +25,22 @@ class seriall(QObject):
         productIdentifier = productIdentifier_
         self.serial = QSerialPort()
         # self.circular_array = CircularArray.CircularArray(400)
-        self.timer = QTimer()
         self.mas_ser = []
         self.mas_iner = []
         self.flag_read_data = False
 
     def readPort(self):                            #запускаем сериал и счтываем порты(записываем в comboBox)
         ports = QSerialPortInfo().availablePorts()
-        ports = [port.portName() for port in ports]
+        # ports = [port.portName() for port in ports]
         self.SignalReadPort.emit(ports)
         return ports
-
     def startSerialAutoConnect(self):                            #запускаем сериал и авто коннект
         portList = self.readPort()
         for port in portList:
             if port.productIdentifier() == productIdentifier and port.vendorIdentifier() == vendorIdentifier:
                 self.openSerialAndStartMessage(port)
-    # @pyqtSlot()
-    def openSerialAndStartMessage(self, currertPort,BaudRate):                   #начинаем общение с сериалом
+
+    def openSerialAndStartMessage(self, currertPort, BaudRate):                   #начинаем общение с сериалом
         print(currertPort, BaudRate)
         self.serial.setBaudRate(BaudRate)
         self.serial.setPortName(currertPort)
@@ -78,29 +76,12 @@ class seriall(QObject):
         except:
             pass
 
-    def readInputSrt_PASSWORD_(self, inputStr):
-        pass
-    def readInputSrt_NEW_PASSWORD_IDX(self, inputStr):
-        pass
 
     def closeSerial(self):                 #закрываем serial и стираем все состояния кнопок в приложении
         self.serial.close()
-    def writeSerialStack(self, iner):             #добавляем в стек строки для отправки
-        self.serialStack.append(iner + "\r\n")
+
     def writeSerial(self, iner):
-        print('---------------------------'+iner)
-
-
-        if iner == 'REG_GET_ALL':
-            self.flag_read_data = True
-        if self.BaudRate > 6000:
-            self.serial.write(str(iner).encode())
-        else:
-            start_time = time.time()
-            while time.time() - start_time < 0.5:
-                self.serial.write(str(iner).encode())
-                time.sleep(0.05)
-            time.sleep(0.3)
-            self.serial.write(str(iner).encode())
+        self.flag_read_data = True
+        self.serial.write(str(iner).encode())
 
 

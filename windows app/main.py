@@ -1,89 +1,113 @@
-# from __future__ import print_function
 from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume
-
-
 from PIL import Image
 import os
+import sys
 
-import threading
-# def main():
-#     sessions = AudioUtilities.GetAllSessions()
-#     for session in sessions:
-#         volume = session._ctl.QueryInterface(ISimpleAudioVolume)
-#         if session.Process and session.Process.name() == "vlc.exe":
-#             print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
-#             volume.SetMasterVolume(0.3, None)
+from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
+from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
+from PySide6.QtCore import QIODevice, QTimer, QObject
+from PySide6.QtGui import QIcon
+from serialLib import seriall
 
-from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
-from PIL import Image
-import os
 
 import sys
-from PyQt5.QtWidgets import QApplication
+from PySide6 import QtCore, QtGui, QtWidgets
+#
+class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
+    def __init__(self, icon, parent=None):
+        QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
 
+        self.menu = QtWidgets.QMenu(parent)
+        self.Action1 = self.menu.addAction("Action1")
+        self.Action2 = self.menu.addAction("Action2")
+        self.exitAction = self.menu.addAction("EXIT")
 
+        self.setContextMenu(self.menu)
 
+        self.exitAction.triggered.connect(self.exit)
+        self.Action1.triggered.connect(self.action1)
+        self.Action2.triggered.connect(self.action2)
 
+    def exit(self):
+        QtCore.QCoreApplication.exit()
 
-
-
-
-
-class MainClass():
-    def __init__(self):
+    def action1(self):
         pass
 
+    def action2(self):
+        self.showMessage("hui", "sosi hui")
+
+class MainClass(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.timer = QTimer()
+        self.timer.setInterval(2500)
+
+        icon = QIcon("icon.png")
+        self.trayIcon = SystemTrayIcon(icon, self)
+        self.trayIcon.show()
+        pid, vid = self.readINIfile()
+        self.ser = seriall(vid, pid, 115200)
+        self.timer.timeout.connect(self.ser.startSerialAutoConnect)
+        self.ser.SignalSerialStartOk.connect(self.startMassege)
+        self.ser.SignalReadFinish.connect(lambda data: self.showData(data))
+        self.timer.start()
+
+    def readINIfile(self):
+        with open('ini.txt') as f:
+            lines = f.readlines()
+        if len(lines) > 1:
+            if lines[0].find("PID=") != -1 and lines[1].find("VID=") != -1:
+                return int(lines[0][4:-1]), int(lines[1][4:])
+            else:
+                self.trayIcon.showMessage("ERROR", "ERROR don't current PID/VID")
+                return 99999, 99999
+        else:
+            self.trayIcon.showMessage("ERROR", "ERROR don't search ini.txt or current PID/VID")
+            return 99999, 99999
+
+
+
+
+    def process_folder(self, folder_path):
+        byte_arrays = []
+        # Проходим по всем файлам в папке
+        for filename in os.listdir(folder_path):
+            # Проверяем, что файл имеет расширение .bmp
+            if filename.endswith(".bmp"):
+                # Получаем полный путь к файлу
+                file_path = os.path.join(folder_path, filename)
+                # Преобразуем изображение в байтовый массив и добавляем его в список
+                byte_array = self.bmp_to_byte_array(file_path)
+                byte_arrays.append(byte_array)
+        return byte_arrays
+
+
+    def bmp_to_byte_array(self, image_path):
+        # Открываем изображение с помощью Pillow
+        img = Image.open(image_path)
+        # Проверяем, является ли изображение монохромным
+        if img.mode != '1':
+            raise ValueError("Изображение не является монохромным")
+        # Получаем данные изображения в виде байтов
+        img_bytes = img.tobytes()
+        return img_bytes
+
+    def startMassege(self):
+        self.timer.stop()
+        for image_byte in range(self.process_folder(".\\icon")):
+            self.ser.writeSerial("SET_ICON:" + str(image_byte))
 
 
 
 
 
-
-def bmp_to_byte_array(image_path):
-    # Открываем изображение с помощью Pillow
-    img = Image.open(image_path)
-
-    # Проверяем, является ли изображение монохромным
-    if img.mode != '1':
-        raise ValueError("Изображение не является монохромным")
-
-    # Получаем данные изображения в виде байтов
-    img_bytes = img.tobytes()
-
-    return img_bytes
-
-
-def process_folder(folder_path):
-    byte_arrays = []
-    # Проходим по всем файлам в папке
-    for filename in os.listdir(folder_path):
-        # Проверяем, что файл имеет расширение .bmp
-        if filename.endswith(".bmp"):
-            # Получаем полный путь к файлу
-            file_path = os.path.join(folder_path, filename)
-            # Преобразуем изображение в байтовый массив и добавляем его в список
-            byte_array = bmp_to_byte_array(file_path)
-            byte_arrays.append(byte_array)
-    return byte_arrays
-
-
-# Путь к папке с изображениями
-folder_path = ".\\icon"
-# Обработка папки и получение байтовых массивов изображений
-image_byte_arrays = process_folder(folder_path)
-
-# print(image_byte_arrays[0])
-#
-# for i in image_byte_arrays[0]:
-#     print(hex(i))
-
-
-
-
+# print("hui")
 if __name__ == '__main__':
+    # print("hui")
     app = QApplication(sys.argv)
-
+    app.setQuitOnLastWindowClosed(False)
     window = MainClass()
-    # window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
+
