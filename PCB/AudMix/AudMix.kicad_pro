@@ -58,20 +58,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        "copper_edge_clearance|146500000|53420000|7d6533f6-726d-4245-8273-e2ee342a3484|9f5760fa-e307-4d12-a699-507fcc870b32",
-        "copper_edge_clearance|146500000|55960000|7d6533f6-726d-4245-8273-e2ee342a3484|880e5f04-ce07-4bf6-9e23-1e51c70ca1d5",
-        "copper_edge_clearance|146500000|58500000|7d6533f6-726d-4245-8273-e2ee342a3484|2582dbd4-d152-4ab0-8f7d-8abb904955b7",
-        "copper_edge_clearance|146500000|61040000|7d6533f6-726d-4245-8273-e2ee342a3484|9e06c52f-6dc2-4d25-b9a5-57bf126be162",
-        "copper_edge_clearance|146500000|63580000|7d6533f6-726d-4245-8273-e2ee342a3484|b0c26070-e2ed-497b-bf1e-a9c822199017",
-        "copper_edge_clearance|146500000|66120000|7d6533f6-726d-4245-8273-e2ee342a3484|ff175efc-82c7-4e2b-a083-d422acf84a40",
-        "copper_edge_clearance|146500000|68660000|7d6533f6-726d-4245-8273-e2ee342a3484|d3137bfa-3718-4085-8899-50f42fa0bb8e",
-        "copper_edge_clearance|146500000|71200000|7d6533f6-726d-4245-8273-e2ee342a3484|7d004a5e-0839-4af7-aae4-5b33eff16553",
-        "silk_edge_clearance|110740000|50035000|afd14f0a-5139-43d9-bee2-5bb667abb82a|7f574b81-6e43-488b-ac05-ba40bbdd0669",
-        "silk_edge_clearance|110775000|50000000|afd14f0a-5139-43d9-bee2-5bb667abb82a|34c867a1-dc9f-490c-8639-3cdaed233539",
-        "silk_edge_clearance|112005000|50000000|afd14f0a-5139-43d9-bee2-5bb667abb82a|68ebf9df-31c4-4dc2-9a51-89a609d593b9",
-        "silk_edge_clearance|112040000|50035000|afd14f0a-5139-43d9-bee2-5bb667abb82a|c51f0ec2-27ed-4c9d-807f-fd1d22c0d9b9"
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
@@ -528,10 +515,10 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "gerbers/",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "../../3dModels/TopBoardPCB.step",
       "svg": "",
       "vrml": ""
     },
