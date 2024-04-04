@@ -1,0 +1,1 @@
+ pyinstaller --hidden-import pycaw  --hidden-import Pillow  --hidden-import ctype  --hidden-import pywin32 --hidden-import PySide6 --onefile -w --add-data="B_sylete;." --add-data="W_sylete;." main.py

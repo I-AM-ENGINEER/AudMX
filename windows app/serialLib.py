@@ -1,6 +1,6 @@
 # import time
-from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
-from PyQt5.QtCore import QIODevice, pyqtSignal, QObject
+from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
+from PySide6.QtCore import QIODevice, Signal, QObject
 
 # PC->ESP
 # SET_ICON:posision:icon     -> num=(int[0:4]) icon=(bite arrey)
@@ -11,21 +11,19 @@ from PyQt5.QtCore import QIODevice, pyqtSignal, QObject
 # SET_BUTTON:str   -> str=(prev/next/play)
 
 
-
-
 class seriall(QObject):
     productIdentifier = 0
     vendorIdentifier = 0
     BaudRate = 0
-    SignalReadPort = pyqtSignal(list)
-    SignalSerialRegOk = pyqtSignal()
-    SignalSerialStartOk = pyqtSignal()
-    SignalError = pyqtSignal()
-    SignalInvalidComand = pyqtSignal()
-    SignalReadFinish = pyqtSignal(list)
-    SignalReadLine = pyqtSignal(str)
-    SignalReadButton = pyqtSignal(str)
-    SignalReadVoluem = pyqtSignal(str)
+    SignalReadPort = Signal(list)
+    SignalSerialRegOk = Signal()
+    SignalSerialStartOk = Signal()
+    SignalError = Signal()
+    SignalInvalidComand = Signal()
+    SignalReadFinish = Signal(list)
+    SignalReadLine = Signal(str)
+    SignalReadButton = Signal(str)
+    SignalReadVoluem = Signal(str)
 
     def __init__(self, vendorIdentifier_ = 0, productIdentifier_ = 0, BaudRate_ = 0):
         super().__init__()
@@ -69,15 +67,9 @@ class seriall(QObject):
         elif inputSrt.find("SET_VALUE") != -1:
             self.SignalReadVoluem.emit(inputSrt[12])
 
-
-
-
-
     def closeSerial(self):                 #закрываем serial и стираем все состояния кнопок в приложении
         self.serial.close()
 
     def writeSerial(self, iner):
         self.flag_read_data = True
         self.serial.write(str(iner).encode())
-
-
