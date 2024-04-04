@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "freertos.h": "c",
+        "task.h": "c",
+        "freertosconfig.h": "c",
+        "gpio.h": "c",
+        "font8x8_basic.h": "c",
+        "ssd1306.h": "c",
+        "i2c.h": "c",
+        "esp_types.h": "c",
+        "stddef.h": "c",
+        "cdefs.h": "c",
+        "i2c_master.h": "c",
+        "string.h": "c",
+        "esp_log.h": "c",
+        "*.tcc": "cpp"
+    }
+}

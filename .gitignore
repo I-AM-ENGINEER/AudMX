@@ -8,3 +8,6 @@
 /PCB/AudMixMacroPad/AudMixMacroPad-backups
 /PCB/AudMixTop/gerbers
 /PCB/AudMixBottom/AudMixBottom_homemade-backups
+PCB/AudMixTop/AudMix.kicad_prl
+PCB/AudMixBottom/AudMixBottom.kicad_prl
+AudMix/sdkconfig.seeed_xiao_esp32c3.old
