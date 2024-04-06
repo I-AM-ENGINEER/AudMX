@@ -1,0 +1,7 @@
+# PC->ESP
+# SET_ICON:posision:icon     -> num=(int[0:4]) icon=(bite arrey)
+# SET_LIGHT:name_mode     -> name_mode=(str(white/wave/level_value))
+
+# PC<-ESP
+# SET_VALUE:num:value   -> num=(int[0:4]) value=(int [0:100])
+# SET_BUTTON:str   -> str=(prev/next/play)
