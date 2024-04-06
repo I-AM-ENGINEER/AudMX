@@ -15,6 +15,7 @@ def getStyleBW(lock_theme = ''):
     for i in range(1024):
         try:
             value_name, value, _ = winreg.EnumValue(reg_key, i)
+
             if lock_theme == 'White':
                 value = 1
             elif lock_theme == 'Black':

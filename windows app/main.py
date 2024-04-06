@@ -9,7 +9,7 @@ from PySide6.QtGui import QWindow
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
-from PySide6.QtCore import QIODevice, QTimer, QObject
+from PySide6.QtCore import QIODevice, QTimer, QObject, Signal
 from PySide6.QtGui import QIcon
 from serialLib import seriall
 import setStyle_Black_Or_White
@@ -17,19 +17,29 @@ import setStyle_Black_Or_White
 dict_monitor_global = {}
 old_screen_skale = 1
 theme = int
-class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
+class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс приложения в трее
     flag_warning = True
-
+    SignalLIght1 = Signal()
+    SignalLIght2 = Signal()
+    SignalLIght3 = Signal()
     def __init__(self, icon, parent=None):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
 
         self.menu = QtWidgets.QMenu(parent)
+
+        self.menu_light = self.menu.addMenu("light")
         self.Action1 = self.menu.addAction("off warning")
         self.Action2 = self.menu.addAction("Action2")
         self.exitAction = self.menu.addAction("EXIT")
 
         self.setContextMenu(self.menu)
 
+        self.Action_light1 = self.menu_light.addAction("white")
+        self.Action_light2 = self.menu_light.addAction("wave")
+        self.Action_light3 = self.menu_light.addAction("level_value")
+        self.Action_light1.triggered.connect(self.action_light1)
+        self.Action_light2.triggered.connect(self.action_light2)
+        self.Action_light2.triggered.connect(self.action_light3)
         self.exitAction.triggered.connect(self.exit)
         self.Action1.triggered.connect(self.action1)
         self.Action2.triggered.connect(self.action2)
@@ -49,13 +59,21 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             self.Action1.setText("off warning")
             self.flag_warning = True
 
-
     def action2(self):
         if self.flag_warning:
             self.showMessage("hui", "sosi hui")
+    def action_light1(self):
+        self.SignalLIght1.emit()
+
+    def action_light2(self):
+        self.SignalLIght2.emit()
+
+    def action_light3(self):
+        self.SignalLIght3.emit()
 
 class MainClass(QtWidgets.QWidget):
     volLevelApp = []
+    dictVolumeApp = {}
     def __init__(self, dict_monitor):
         super(MainClass, self).__init__()
         global dict_monitor_global
@@ -77,20 +95,28 @@ class MainClass(QtWidgets.QWidget):
         self.timer.start()
         self.timer_2 = QTimer()
         self.timer_2.timeout.connect(self.updateStyleUI)
-        self.timer_2.setInterval(10000)
+        self.timer_2.setInterval(30000)
         self.timer_2.start()
-
-        # self.show()
-
+        self.updateStyleUI()
+        self.process_folder(".\\icon")
+        # for image_byte in range(self.process_folder(".\\icon")):
+        #     pass
 
     def updateStyleUI(self):
-
+        """
+        #функция вызываеммая таймером и обновляющяя стиль приложения
+        :return: None
+        """
         global theme
         cssStyle, themeBW = setStyle_Black_Or_White.getStyleBW()
         if theme != themeBW:
             self.setStyleSheet(cssStyle)
 
     def readINIfile(self):
+        """
+        #читает ини файл с некоторыми наситройками
+        :return: None
+        """
         with open('ini.txt') as f:
             lines = f.readlines()
         if len(lines) > 1:
@@ -103,7 +129,12 @@ class MainClass(QtWidgets.QWidget):
             self.trayIcon.showMessage("ERROR", "ERROR don't search ini.txt or current PID/VID")
             return 99999, 99999
 
-    def keyPleerHandle(self, comand: str):
+    def keyPleerHandle(self, comand: str) -> None:
+        """
+        #обработчик команд из сериал порта и иниирующий нажатия кнопок плеера
+        :param comand: строка с командой типа ''
+        :return: NONE
+        """
         comand = str(comand)
         if comand.find('play') != -1:
             win32api.keybd_event(win32con.VK_MEDIA_PLAY_PAUSE, 0, 0, 0)
@@ -115,27 +146,47 @@ class MainClass(QtWidgets.QWidget):
             win32api.keybd_event(win32con.VK_MEDIA_PREV_TRACK, 0, 0, 0)
             win32api.keybd_event(win32con.VK_MEDIA_PREV_TRACK, 0, win32con.KEYEVENTF_KEYUP, 0)
 
-    def levelVolHandle(self, comand: str):
+    def levelVolHandle(self, comand: str) -> None:
+        """
+        #обработчик команд из сериал порта и выставляющий нужый уровень громкости
+        :param comand: строка с командой типа ''
+        :return: NONE
+        """
         comand = str(comand)
 
         for session in self.audioSessions:
             volume = session._ctl.QueryInterface(ISimpleAudioVolume)
-            if session.Process and session.Process.name() == self.volLevelApp[0] + ".exe":
-                print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
-                volume.SetMasterVolume(float(self.volLevelApp[2:])/100, None)
+
+            if session.Process and session.Process.name() == self.volLevelApp[int(comand[10:-1])] + ".exe":
+                # print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
+                volume.SetMasterVolume(float(comand[12:-1]/100, None))
             else:
                 if self.trayIcon.flag_warning:
-                    self.trayIcon.showMessage("ERROR", self.volLevelApp[0] + '.exe not found')
+                    self.trayIcon.showMessage("ERROR", self.volLevelApp[int(comand[10:-1])][8:] + '.exe not found')
+    def handleSignalLIght1(self):
+        self.ser.writeSerial("SET_LIGHT:white")
+    def handleSignalLIght2(self):
+        self.ser.writeSerial("SET_LIGHT:wave")
+    def handleSignalLIght3(self):
+        self.ser.writeSerial("SET_LIGHT:level_value")
 
-    def process_folder(self, folder_path):
+    def process_folder(self, folder_path: str) ->  list[bytes]:
+        """
+        #читает иконки из папки и прогоняет их через преобразование
+        :param folder_path: - относительный путь к папку и иконками
+        :return: массив байтовых строк
+        """
         byte_arrays = []
         # Проходим по всем файлам в папке
         for filename in os.listdir(folder_path):
             # Проверяем, что файл имеет расширение .bmp
+            # i = 0
             if filename.endswith(".bmp"):
 
-                self.volLevelApp.append(str(filename[3:-4]))
-                print(filename[3:-4])
+                self.volLevelApp.append(str(filename[8:-4]))
+                # self.dictVolumeApp[i] = filename[8:-4]
+                # i += 1
+                # print(filename[2:-4])
                 # Получаем полный путь к файлу
                 file_path = os.path.join(folder_path, filename)
                 # Преобразуем изображение в байтовый массив и добавляем его в список
@@ -144,7 +195,12 @@ class MainClass(QtWidgets.QWidget):
         return byte_arrays
 
 
-    def bmp_to_byte_array(self, image_path):
+    def bmp_to_byte_array(self, image_path: str) ->  bytes:
+        """
+        #преобразование картинок в байт массив
+        :param image_path: - путь к иконками
+        :return: байт массив
+        """
         # Открываем изображение с помощью Pillow
         img = Image.open(image_path)
         # Проверяем, является ли изображение монохромным
@@ -155,9 +211,17 @@ class MainClass(QtWidgets.QWidget):
         return img_bytes
 
     def startMassege(self):
+        """
+        #вызываеться послесигнала о подключении и запускает перврначальную настройку(записывает картинки в микщер) и подключает сигналы
+        :return:
+        """
+        self.trayIcon.SignalLIght1.connect(self.handleSignalLIght1)
+        self.trayIcon.SignalLIght2.connect(self.handleSignalLIght2)
+        self.trayIcon.SignalLIght3.connect(self.handleSignalLIght3)
         self.timer.stop()
         for image_byte in range(self.process_folder(".\\icon")):
             self.ser.writeSerial("SET_ICON:" + str(image_byte))
+
 
     # def editSize(self, set_screen_name='', **kwargs):  # отрисовка окна с учетем размера экрана
     #     global old_screen_skale
