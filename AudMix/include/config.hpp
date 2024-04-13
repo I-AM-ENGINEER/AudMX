@@ -6,6 +6,11 @@
 #define STRIP_LED_COUNT 101
 #define STRIP_PIN       6
 #define I2C_SDA_PIN     8
+#define ICON_SIZE_PX    48
+
+#define DISPLAY_WIDTH   64
+#define DISPLAY_HEIGHT  48
+
 
 #include <slider.hpp>
 

@@ -1,29 +1,40 @@
 #pragma once
 
+#include "esp_crc.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
+#include <iostream>
+//#include "config.hpp"
 #include <LovyanGFX.hpp>
 
+struct Bus_I2C_Mod : public lgfx::Bus_I2C{
+    void beginTransaction( void ) override{
+        i2c_set_pin(I2C_NUM_0, _cfg.pin_sda, _cfg.pin_scl, true, true, I2C_MODE_MASTER);
+        lgfx::Bus_I2C::beginTransaction();
+    };
+
+    void endTransaction( void ) override{
+        lgfx::Bus_I2C::endTransaction();
+        gpio_reset_pin((gpio_num_t)this->_cfg.pin_scl);
+    }
+};
+
 class LGFX_SSD1306  : public lgfx::LGFX_Device{    
-    lgfx::Panel_SSD1306     _panel_instance;
-    lgfx::Bus_I2C           _bus_instance;
+    lgfx::Panel_SSD1306         _panel_instance;
+    Bus_I2C_Mod                 _bus_instance;
 
     struct config_t{
-        int16_t pin_scl         =   -1;
-        int16_t pin_sda         =   -1;
-        uint8_t screen_height   =   48;
-        uint8_t screen_width    =   64;
+        int16_t pin_scl         =     -1;
+        int16_t pin_sda         =     -1;
+        uint8_t screen_height   =     48;
+        uint8_t screen_width    =     64;
         uint8_t i2c_adress      =   0x3C;
     };
 
-    void select( void );
-    void unselect( void );
 public:
     LGFX_SSD1306( void ){}
-    void startWrite( bool transaction = true ); // override
-    void endWrite( void ); // override
     const config_t& config(void) const { return _cfg; }
-    void config(const config_t& cfg);
+    void config( const config_t& cfg );
 private:
     config_t _cfg;
 };
@@ -56,22 +67,4 @@ void LGFX_SSD1306::config(const config_t& cfg){
         _panel_instance.config(cfg);
         setPanel(&_panel_instance);
     }
-}
-
-void LGFX_SSD1306::select( void ){
-    i2c_set_pin(I2C_NUM_0, _cfg.pin_sda, _cfg.pin_scl, true, true, I2C_MODE_MASTER);
-}
-
-void LGFX_SSD1306::startWrite( bool transaction ){
-    select();
-    _panel->startWrite(transaction);
-}
-
-void LGFX_SSD1306::endWrite( void ){
-    _panel->endWrite();
-    unselect();
-}
-
-void LGFX_SSD1306::unselect( void ){
-    gpio_reset_pin((gpio_num_t)this->_cfg.pin_scl);
 }
