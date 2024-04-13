@@ -10,7 +10,7 @@
 
 #define DISPLAY_WIDTH   64
 #define DISPLAY_HEIGHT  48
-
+#define SLIDERS_ADC_UNIT    ADC_UNIT_1
 
 #include <slider.hpp>
 
@@ -21,7 +21,6 @@ void read_config( void ){
     // Slider 1 config
     {
         auto cfg = sliders[0].config();
-        cfg.adc_unit        = &adc1_handle;
         cfg.adc_channel     = ADC_CHANNEL_0;
         cfg.i2c_addr        = 0x3C;
         cfg.pin_sda         = I2C_SDA_PIN;
@@ -35,7 +34,6 @@ void read_config( void ){
     // Slider 2 config
     {
         auto cfg = sliders[1].config();
-        cfg.adc_unit        = &adc1_handle;
         cfg.adc_channel     = ADC_CHANNEL_1;
         cfg.i2c_addr        = 0x3D;
         cfg.pin_sda         = I2C_SDA_PIN;
@@ -49,7 +47,6 @@ void read_config( void ){
     // Slider 3 config
     {
         auto cfg = sliders[2].config();
-        cfg.adc_unit        = &adc1_handle;
         cfg.adc_channel     = ADC_CHANNEL_2;
         cfg.i2c_addr        = 0x3C;
         cfg.pin_sda         = I2C_SDA_PIN;
@@ -63,7 +60,6 @@ void read_config( void ){
     // Slider 4 config
     {
         auto cfg = sliders[3].config();
-        cfg.adc_unit        = &adc1_handle;
         cfg.adc_channel     = ADC_CHANNEL_3;
         cfg.i2c_addr        = 0x3D;
         cfg.pin_sda         = I2C_SDA_PIN;
@@ -77,7 +73,6 @@ void read_config( void ){
     // Slider 5 config
     {
         auto cfg = sliders[4].config();
-        cfg.adc_unit        = &adc1_handle;
         cfg.adc_channel     = ADC_CHANNEL_4;
         cfg.i2c_addr        = 0x3C;
         cfg.pin_sda         = I2C_SDA_PIN;

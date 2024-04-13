@@ -1,8 +1,6 @@
 #include <string>
-#include <stdio.h>
-//#include <iostream>
+#include <iostream>
 #include <display.hpp>
-//#include "stdafx.h"
 
 #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include "esp_log.h"
@@ -10,10 +8,11 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
-#include "driver/adc.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_console.h"
+#include "esp_adc/adc_oneshot.h"
+#include "nvs_flash.h"
 
 
 #include "config.hpp"
@@ -31,6 +30,7 @@ extern "C" {
 adc_oneshot_unit_handle_t adc1_handle;
 
 Slider sliders[SLIDERS_COUNT];
+
 SmartLed strip(STRIP_TYPE, STRIP_LED_COUNT, STRIP_PIN);
 
 void displayTask( void *args ){
@@ -41,7 +41,7 @@ void displayTask( void *args ){
             //sprintf(tmp, "%.3f", (float)slider_pos);
             //slider.display.drawString(tmp, 10, 10);
             //if(slider.display)
-            slider.calibrate();
+            slider.update();
         }
         vTaskDelay(1);
     }
@@ -52,7 +52,7 @@ void consoleTask( void *args ){
     std::string str = "";
 
     while (1){
-        uint32_t res = 0;
+        int res = 0;
         std::cin >> str;
 
         if(str.compare(0, strlen(CMD_SET_ICON), CMD_SET_ICON) == 0){
@@ -69,13 +69,13 @@ void consoleTask( void *args ){
             sliders[display_num].setIcon(icon_array, ICON_SIZE_PX, ICON_SIZE_PX);
             sliders[display_num].displayIcon(true);
         }else{
-            std::cout << "UNKNOWN CMD" << std::endl;
+            res = -1;
         }
 exit:
         if(res == 0){
             std::cout << "OK" << std::endl;
         }else{
-           std::cout << "ERROR: " << res << std::endl;
+            std::cout << "ERROR: " << res << std::endl;
         }
         vTaskDelay(1);
     }
@@ -83,7 +83,7 @@ exit:
 
 void adc_init( void ){
     adc_oneshot_unit_init_cfg_t init_config1 = {
-        .unit_id = ADC_UNIT_1,
+        .unit_id = SLIDERS_ADC_UNIT,
         .clk_src = ADC_DIGI_CLK_SRC_DEFAULT,
         .ulp_mode = ADC_ULP_MODE_DISABLE,
     };
@@ -99,24 +99,24 @@ void virtdisp_init( void ){
     virt_display.init();
 }
 
-void app_main() {
-    
-    esp_log_level_set("*", ESP_LOG_NONE);
-
+void consoleInit( void ){
     esp_console_repl_t *repl = NULL;
     esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
-    /* Prompt to be printed before each line.
-     * This can be customized, made dynamic, etc.
-     */
+    
     repl_config.prompt = PROMPT_STR ">";
     repl_config.max_cmdline_length = 32;
 
     esp_console_dev_usb_serial_jtag_config_t hw_config = ESP_CONSOLE_DEV_USB_SERIAL_JTAG_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_console_new_repl_usb_serial_jtag(&hw_config, &repl_config, &repl));
+}
 
+void app_main() {
     //esp_log_level_set("*", ESP_LOG_DEBUG);
+    esp_log_level_set("*", ESP_LOG_INFO);
 
-    // UART0 pins reset
+    consoleInit();
+
+    // UART0 pins reset, maybe useless?
 	gpio_reset_pin(GPIO_NUM_20);
 	gpio_reset_pin(GPIO_NUM_21);
 
@@ -125,8 +125,15 @@ void app_main() {
 
     adc_init();
     for( auto& slider : sliders ){
-        slider.init();
+        slider.init(&adc1_handle);
+        slider.calibrate();
+        //auto calibration = slider.getCalibration();
+        //sizeof(calibration);
     }
+
+    //sliders[0].calibrate();
+    
+    delay(5000);
     // This shit need for real displays work ok, if no this, last display work very unstable
     virtdisp_init();
 
