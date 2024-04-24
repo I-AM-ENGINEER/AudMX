@@ -34,37 +34,35 @@ class LGFX_SSD1306  : public lgfx::LGFX_Device{
 public:
     LGFX_SSD1306( void ){}
     const config_t& config(void) const { return _cfg; }
-    void config( const config_t& cfg );
-private:
+    void config( const config_t& cfg ){
+        _cfg = cfg;
+        {
+            auto cfg = _bus_instance.config();
+            cfg.i2c_port    = 0;
+            cfg.freq_write  = 400000; // Frequency here not real
+            cfg.freq_read   = 400000;
+            cfg.pin_scl     = _cfg.pin_scl;
+            cfg.pin_sda     = _cfg.pin_sda;
+            cfg.i2c_addr    = _cfg.i2c_adress;
+            _bus_instance.config(cfg);
+            _panel_instance.setBus(&_bus_instance);
+        }
+        {
+            auto cfg = _panel_instance.config();
+
+            cfg.panel_width      =   _cfg.screen_width;
+            cfg.panel_height     =  _cfg.screen_height;
+            cfg.memory_width     =   _cfg.screen_width;
+            cfg.memory_height    =  _cfg.screen_height;
+            cfg.offset_x         =                   0;
+            cfg.offset_y         =                   0;
+            cfg.offset_rotation  =                   2;
+            cfg.invert           =               false;
+
+            _panel_instance.config(cfg);
+            setPanel(&_panel_instance);
+        }
+    }
+protected:
     config_t _cfg;
 };
-
-void LGFX_SSD1306::config(const config_t& cfg){
-    _cfg = cfg;
-    {
-        auto cfg = _bus_instance.config();
-        cfg.i2c_port    = 0;
-        cfg.freq_write  = 400000; // Frequency here not real
-        cfg.freq_read   = 400000;
-        cfg.pin_scl     = _cfg.pin_scl;
-        cfg.pin_sda     = _cfg.pin_sda;
-        cfg.i2c_addr    = _cfg.i2c_adress;
-        _bus_instance.config(cfg);
-        _panel_instance.setBus(&_bus_instance);
-    }
-    {
-        auto cfg = _panel_instance.config();
-
-        cfg.panel_width      =   _cfg.screen_width;
-        cfg.panel_height     =  _cfg.screen_height;
-        cfg.memory_width     =   _cfg.screen_width;
-        cfg.memory_height    =  _cfg.screen_height;
-        cfg.offset_x         =                   0;
-        cfg.offset_y         =                   0;
-        cfg.offset_rotation  =                   2;
-        cfg.invert           =               false;
-
-        _panel_instance.config(cfg);
-        setPanel(&_panel_instance);
-    }
-}

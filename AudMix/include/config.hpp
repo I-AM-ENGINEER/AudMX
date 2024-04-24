@@ -1,23 +1,8 @@
 #pragma once
 
-#define SLIDERS_COUNT   5
+#include "device.hpp"
 
-#define STRIP_TYPE      LED_WS2812B
-#define STRIP_LED_COUNT 101
-#define STRIP_PIN       6
-#define I2C_SDA_PIN     8
-#define ICON_SIZE_PX    48
-
-#define DISPLAY_WIDTH   64
-#define DISPLAY_HEIGHT  48
-#define SLIDERS_ADC_UNIT    ADC_UNIT_1
-
-#include <slider.hpp>
-
-extern Slider sliders[SLIDERS_COUNT];
-extern adc_oneshot_unit_handle_t adc1_handle;
-
-void read_config( void ){
+void Device::configure( void ){
     // Slider 1 config
     {
         auto cfg = sliders[0].config();
