@@ -28,7 +28,7 @@ extern "C" {
     void app_main(void);
 }
 
-Device audMix();
+Device audMix;
 
 //adc_oneshot_unit_handle_t adc1_handle;
 //Slider sliders[SLIDERS_COUNT];
@@ -91,7 +91,7 @@ void app_main() {
 	//gpio_reset_pin(GPIO_NUM_20);
 	//gpio_reset_pin(GPIO_NUM_21);
 
-    //audMix.init();
+    audMix.init();
 
     //xTaskCreate(displayTask, "test_task", 3000, NULL, 1000, NULL);
     //xTaskCreate(consoleTask, "console_task", 5000, NULL, 2000, NULL);

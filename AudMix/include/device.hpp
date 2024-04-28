@@ -2,7 +2,6 @@
 
 #include "esp_adc/adc_oneshot.h"
 #include "SmartLeds.h"
-//#include "config.hpp"
 #include "slider.hpp"
 #include "system.hpp"
 
@@ -22,9 +21,8 @@ class Device{
 public:
     Battery battery;
     Slider sliders[SLIDERS_COUNT];
-    //SmartLed strip;
-    Device( void ); 
-        //: strip(STRIP_TYPE, STRIP_LED_COUNT, STRIP_PIN) {}
+    SmartLed strip;
+    Device( void ) : strip(STRIP_TYPE, STRIP_LED_COUNT, STRIP_PIN) {}
     
     void init( void );
 };
