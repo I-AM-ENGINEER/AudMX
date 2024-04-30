@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include <stdio.h>
 
 #include "device.hpp"
 
@@ -17,6 +18,12 @@ void Device::adcInit( void ){
         .ulp_mode = ADC_ULP_MODE_DISABLE,
     };
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &_sliders_adc));
+}
+
+void Device::update( void ){
+    for( auto& slider : sliders ){
+        slider.update();
+    }
 }
 
 void Device::consoleInit( void ){
@@ -39,6 +46,23 @@ void Device::virtDispInit( void ){
     virt_display.init();
 }
 
+void Device::clalibrate( void ){
+    char tmp[10];
+    int i = 0;
+
+
+
+    for( auto& slider : sliders ){
+        sprintf(tmp, "test %d", i++);
+        slider.display.setTextSize(1);
+        slider.display.drawString(tmp, 0, 0);
+
+
+        //slider.init(&_sliders_adc);
+        
+    }
+}
+
 void Device::init( void ){
     configure();
     consoleInit();
@@ -52,11 +76,30 @@ void Device::init( void ){
     gpio_config(&pullup_i2c);
     gpio_set_level(GPIO_NUM_9, 1);
 
+    strip.begin();
+    
+    for(uint32_t i = 0; i < strip.size(); i++){
+        strip[i].r = 5;
+        strip[i].g = 0;
+        strip[i].b = 0;
+    }
+    
+    strip.show();
+
     virtDispInit();
+
     for( auto& slider : sliders ){
         slider.init(&_sliders_adc);
-        slider.calibrate();
+        delay(1);
+        //slider.calibrate();
         //auto calibration = slider.getCalibration();
         //sizeof(calibration);
+    }
+
+    
+    clalibrate();
+
+    for( auto& slider : sliders ){
+        //slider.calibrate();
     }
 }

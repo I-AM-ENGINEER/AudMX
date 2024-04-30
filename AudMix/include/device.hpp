@@ -18,11 +18,12 @@ class Device{
     void consoleInit( void );
     void virtDispInit( void );
     void configure( void );
+    void clalibrate( void );
 public:
     Battery battery;
     Slider sliders[SLIDERS_COUNT];
     SmartLed strip;
     Device( void ) : strip(STRIP_TYPE, STRIP_LED_COUNT, STRIP_PIN) {}
-    
+    void update( void );
     void init( void );
 };

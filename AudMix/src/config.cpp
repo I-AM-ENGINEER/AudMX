@@ -33,7 +33,7 @@ void Device::configure( void ){
     {
         auto cfg = sliders[2].config();
         cfg.adc_channel     = ADC_CHANNEL_2;
-        cfg.i2c_addr        = 0x3C;
+        cfg.i2c_addr        = 0x3D;
         cfg.pin_sda         = I2C_SDA_PIN;
         cfg.pin_scl         = 20;
         cfg.led_start       = 41;
@@ -47,7 +47,7 @@ void Device::configure( void ){
     {
         auto cfg = sliders[3].config();
         cfg.adc_channel     = ADC_CHANNEL_3;
-        cfg.i2c_addr        = 0x3D;
+        cfg.i2c_addr        = 0x3C;
         cfg.pin_sda         = I2C_SDA_PIN;
         cfg.pin_scl         = 20;
         cfg.led_start       = 61;

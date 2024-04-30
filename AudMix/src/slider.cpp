@@ -9,6 +9,7 @@
 #include "esp_adc/adc_oneshot.h"
 
 void Slider::calibrate( void ){
+    /*
     char msg[11];
     float accumulator = 0;
     float raw_value;
@@ -77,6 +78,7 @@ void Slider::calibrate( void ){
 
     _calibration.max_value = max_position;
     _calibration.min_value = min_position;
+    */
 }
 
 bool Slider::displayIcon( bool display_icon ){
@@ -89,10 +91,13 @@ bool Slider::displayIcon( void ){
 }
 
 void Slider::update( void ){
+    //static float acc[16];
+
     display.setTextSize(1.0f);
     char msg[11];
     //display.draw_bitmap(0,0,_ico_buffer,_ico_size_x,_ico_size_y,0,TFT_BLACK);
-    snprintf(msg, sizeof(msg), "%.0f", readPercantage() * 4095.0f);
+
+    snprintf(msg, sizeof(msg), "%.0f", adcRawRead() * 4095.0f);
     display.drawString(msg, 0, 0);
     //display.draw_xbitmap
     //if(_ico_display){
@@ -135,14 +140,24 @@ int32_t Slider::init( adc_oneshot_unit_handle_t* adc_handle ){
     return 0;
 }
 
-float Slider::readPercantage( void ){
+float Slider::adcRawRead( void ){
+    const int sample_count = 4;
     int adc_val;
     int accumulator = 0;
-    for(uint32_t i = 0; i < 4; i++){
+    for(uint32_t i = 0; i < (uint32_t)sample_count; i++){
         adc_oneshot_read(*_adc_handle, _cfg.adc_channel, &adc_val);
         accumulator += adc_val;
     }
     
-    float percentage = (float)accumulator / 4.0f / 4095.0f;
+    float percentage = (float)accumulator / 4095.0f / (float)sample_count;
     return percentage;
+}
+
+float Slider::adcRawReadAccuracy( void ){
+    const int sample_count = 256;
+    float accumulator = 0.0f;
+    for(uint32_t i = 0; i < (uint32_t)sample_count; i++){
+        accumulator += adcRawRead();
+    }
+    return accumulator / (float)sample_count;
 }

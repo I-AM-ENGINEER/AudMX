@@ -54,9 +54,9 @@ public:
             cfg.panel_height     =  _cfg.screen_height;
             cfg.memory_width     =   _cfg.screen_width;
             cfg.memory_height    =  _cfg.screen_height;
-            cfg.offset_x         =                   0;
+            cfg.offset_x         =                   32;
             cfg.offset_y         =                   0;
-            cfg.offset_rotation  =                   2;
+            cfg.offset_rotation  =                   0;
             cfg.invert           =               false;
 
             _panel_instance.config(cfg);

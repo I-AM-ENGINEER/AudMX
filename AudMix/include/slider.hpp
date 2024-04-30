@@ -29,7 +29,8 @@ class Slider{
         uint16_t led_count                  =              0;
         bool double_leds                    =           true;
     };
-    float readPercantage( void );
+    float adcRawRead( void );
+    float adcRawReadAccuracy( void );
 public:
     LGFX_SSD1306 display;
     
@@ -37,8 +38,9 @@ public:
     const config_t& config( void ) const { return _cfg; }
     void config( const config_t& cfg );
 
-    const calibration_t& getCalibration( void ) const { return _calibration; }
-    void setCalibration( const calibration_t& calibration ) { _calibration = calibration; }
+    void calibrationSetMinPoint( calibration_t& calibration ) { calibration.min_value = adcRawReadAccuracy(); }
+    void calibrationSetMaxPoint( calibration_t& calibration ) { calibration.max_value = adcRawReadAccuracy(); }
+    void calibrationLoad( const calibration_t calibration ) { _calibration = calibration; }
 
     int32_t init( adc_oneshot_unit_handle_t* adc_handle );
     int32_t setIcon( uint8_t *icon, uint32_t size_x, uint32_t size_y );

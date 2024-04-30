@@ -34,10 +34,14 @@ Device audMix;
 //Slider sliders[SLIDERS_COUNT];
 //SmartLed strip(STRIP_TYPE, STRIP_LED_COUNT, STRIP_PIN);
 
-/*
+
 void displayTask( void *args ){
     //char tmp[10];
+    
     while(1){
+        audMix.update();
+        vTaskDelay(1);
+        /*
         for( auto& slider : sliders ){
             //float slider_pos = slider.readPercantage();
             //sprintf(tmp, "%.3f", (float)slider_pos);
@@ -46,9 +50,11 @@ void displayTask( void *args ){
             slider.update();
         }
         vTaskDelay(1);
+        */
     }
 }
 
+/*
 
 void consoleTask( void *args ){
     std::string str = "";
@@ -93,6 +99,6 @@ void app_main() {
 
     audMix.init();
 
-    //xTaskCreate(displayTask, "test_task", 3000, NULL, 1000, NULL);
+    xTaskCreate(displayTask, "test_task", 3000, NULL, 1000, NULL);
     //xTaskCreate(consoleTask, "console_task", 5000, NULL, 2000, NULL);
 }
