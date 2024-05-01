@@ -1,5 +1,7 @@
 #include "device.hpp"
 
+extern CRGB *ws2812b_display_buffer;
+
 void Device::configure( void ){
     // Slider 1 config
     {
@@ -11,7 +13,7 @@ void Device::configure( void ){
         cfg.led_start       = 1;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
-        cfg.led_strip       = &strip;
+        cfg.led_strip       = ws2812b_display_buffer;
         sliders[0].config(cfg);
     }
 
@@ -25,7 +27,7 @@ void Device::configure( void ){
         cfg.led_start       = 21;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
-        cfg.led_strip       = &strip;
+        cfg.led_strip       = ws2812b_display_buffer;
         sliders[1].config(cfg);
     }
 
@@ -39,7 +41,7 @@ void Device::configure( void ){
         cfg.led_start       = 41;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
-        cfg.led_strip       = &strip;
+        cfg.led_strip       = ws2812b_display_buffer;
         sliders[2].config(cfg);
     }
 
@@ -53,7 +55,7 @@ void Device::configure( void ){
         cfg.led_start       = 61;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
-        cfg.led_strip       = &strip;
+        cfg.led_strip       = ws2812b_display_buffer;
         sliders[3].config(cfg);
     }
 
@@ -67,7 +69,7 @@ void Device::configure( void ){
         cfg.led_start       = 81;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
-        cfg.led_strip       = &strip;
+        cfg.led_strip       = ws2812b_display_buffer;
         sliders[4].config(cfg);
     }
 }

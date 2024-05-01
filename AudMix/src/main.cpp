@@ -6,20 +6,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "device.hpp"
-//#include "driver/gpio.h"
-//#include "driver/i2c.h"
-//#include "esp_event.h"
-//#include "esp_log.h"
-//#include "esp_console.h"
-//#include "esp_adc/adc_oneshot.h"
-//#include "nvs_flash.h"
-
-
-//#include "config.hpp"
-//#include "slider.hpp"
-//#include <SmartLeds.h>
-//#include <LovyanGFX.hpp>
-
 
 #define PROMPT_STR CONFIG_IDF_TARGET
 #define CMD_SET_ICON    "SET_ICON"
@@ -30,32 +16,23 @@ extern "C" {
 
 Device audMix;
 
-//adc_oneshot_unit_handle_t adc1_handle;
-//Slider sliders[SLIDERS_COUNT];
-//SmartLed strip(STRIP_TYPE, STRIP_LED_COUNT, STRIP_PIN);
-
-
 void displayTask( void *args ){
-    //char tmp[10];
-    
     while(1){
         audMix.update();
         vTaskDelay(1);
-        /*
-        for( auto& slider : sliders ){
-            //float slider_pos = slider.readPercantage();
-            //sprintf(tmp, "%.3f", (float)slider_pos);
-            //slider.display.drawString(tmp, 10, 10);
-            //if(slider.display)
-            slider.update();
+    }
+}
+
+void stripAnimation( void *args ){
+    while(1){
+        for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
+            audMix.sliders[i].strip.update();
         }
-        vTaskDelay(1);
-        */
+        vTaskDelay(20);
     }
 }
 
 /*
-
 void consoleTask( void *args ){
     std::string str = "";
 
@@ -91,14 +68,11 @@ exit:
 
 void app_main() {
     //esp_log_level_set("*", ESP_LOG_DEBUG);
-    esp_log_level_set("*", ESP_LOG_INFO);
-    
-    // UART0 pins reset, maybe useless?
-	//gpio_reset_pin(GPIO_NUM_20);
-	//gpio_reset_pin(GPIO_NUM_21);
+    esp_log_level_set("*", ESP_LOG_ERROR);
 
     audMix.init();
-
-    xTaskCreate(displayTask, "test_task", 3000, NULL, 1000, NULL);
+    xTaskCreate(stripAnimation, "animation", 1000, NULL, 500, NULL);
+    xTaskCreate(displayTask, "test_task", 8000, NULL, 1000, NULL);
+    xTaskCreate(stripTask, "strip_", 3000, NULL, 2000, NULL);
     //xTaskCreate(consoleTask, "console_task", 5000, NULL, 2000, NULL);
 }

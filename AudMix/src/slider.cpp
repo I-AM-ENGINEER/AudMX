@@ -91,18 +91,11 @@ bool Slider::displayIcon( void ){
 }
 
 void Slider::update( void ){
-    //static float acc[16];
-
+    static uint8_t h = 0;
     display.setTextSize(1.0f);
     char msg[11];
-    //display.draw_bitmap(0,0,_ico_buffer,_ico_size_x,_ico_size_y,0,TFT_BLACK);
-
     snprintf(msg, sizeof(msg), "%.0f", adcRawRead() * 4095.0f);
     display.drawString(msg, 0, 0);
-    //display.draw_xbitmap
-    //if(_ico_display){
-        
-    //}
 }
 
 int32_t Slider::setIcon( uint8_t *icon, uint32_t size_x, uint32_t size_y ){
@@ -124,6 +117,14 @@ void Slider::config( const config_t& cfg ) {
         cfg.pin_scl     =      _cfg.pin_scl;
         cfg.pin_sda     =      _cfg.pin_sda;
         display.config(cfg);
+    }
+    {
+        auto cfg = strip.config();
+        cfg.led_count = _cfg.led_count;
+        cfg.led_start = _cfg.led_start;
+        cfg.led_strip = _cfg.led_strip;
+        cfg.double_leds = _cfg.double_leds;
+        strip.config(cfg);
     }
 }
 

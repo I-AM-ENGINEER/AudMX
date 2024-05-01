@@ -1,8 +1,8 @@
 #pragma once
 
-#include "SmartLeds.h"
 #include "display.hpp"
 #include "system.hpp"
+#include "stripFrame.hpp"
 
 class Slider{
     adc_oneshot_unit_handle_t*    _adc_handle;
@@ -24,7 +24,7 @@ class Slider{
         int16_t pin_sda                     =             -1;
         uint8_t i2c_addr                    =           0x3C;
         adc_channel_t adc_channel           =  ADC_CHANNEL_0;
-        SmartLed *led_strip                 =        nullptr;
+        CRGB *led_strip                     =        nullptr;
         uint16_t led_start                  =              0;
         uint16_t led_count                  =              0;
         bool double_leds                    =           true;
@@ -33,8 +33,7 @@ class Slider{
     float adcRawReadAccuracy( void );
 public:
     LGFX_SSD1306 display;
-    
-    //Slider( void ) {};
+    StripFrame strip;
     const config_t& config( void ) const { return _cfg; }
     void config( const config_t& cfg );
 

@@ -13,7 +13,8 @@
         "i2c_master.h": "c",
         "string.h": "c",
         "esp_log.h": "c",
-        "*.tcc": "cpp"
+        "*.tcc": "cpp",
+        "esp_ws28xx.h": "c"
     },
     "idf.portWin": "COM12"
 }
