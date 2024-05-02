@@ -1,12 +1,10 @@
 #include "slider.hpp"
 #include "display.hpp"
 #include "system.hpp"
-
-#include <stdio.h>
-#include <string>
-
 #include "esp_log.h"
 #include "esp_adc/adc_oneshot.h"
+#include <stdio.h>
+#include <string>
 
 void Slider::calibrate( void ){
     /*
@@ -95,11 +93,13 @@ void Slider::update( void ){
     display.setTextSize(1.0f);
     char msg[11];
     snprintf(msg, sizeof(msg), "%.0f", adcRawRead() * 4095.0f);
-    display.drawString(msg, 0, 0);
+    if(_ico_display){
+        display.drawBitmap(0, 0, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF);
+    }
 }
 
-int32_t Slider::setIcon( uint8_t *icon, uint32_t size_x, uint32_t size_y ){
-    size_t icon_size = size_x*size_y/8;
+int32_t Slider::setIcon( const uint8_t *icon, uint32_t size_x, uint32_t size_y ){
+    size_t icon_size = ((size_x+7)/8) * size_y;
     if(sizeof(_ico_buffer) < icon_size){
         return 1;
     }
@@ -130,7 +130,6 @@ void Slider::config( const config_t& cfg ) {
 
 int32_t Slider::init( adc_oneshot_unit_handle_t* adc_handle ){
     _adc_handle = adc_handle;
-
     display.init();
     
     adc_oneshot_chan_cfg_t config = {
@@ -138,6 +137,9 @@ int32_t Slider::init( adc_oneshot_unit_handle_t* adc_handle ){
         .bitwidth = ADC_BITWIDTH_12,
     };
     ESP_ERROR_CHECK(adc_oneshot_config_channel(*_adc_handle, _cfg.adc_channel, &config));
+    
+    setIcon(bitmap_test, 60, 44);
+    displayIcon(true);
     return 0;
 }
 
