@@ -74,7 +74,7 @@ void StripFrame::show( void ){
     for(uint32_t i = 0; i < _cfg.led_count; i++){
         _cfg.led_strip[i+_cfg.led_start] = _segment[i];
         if(_cfg.double_leds){
-            _cfg.led_strip[_cfg.led_start + _cfg.led_count*2 - i] = _segment[i];
+            _cfg.led_strip[_cfg.led_start + _cfg.led_count*2 - 1 - i] = _segment[i];
         }
     }
 }

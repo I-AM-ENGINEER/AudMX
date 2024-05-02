@@ -5196,6 +5196,25 @@
 		)
 		(uuid cf94f360-a57a-4e05-8694-0926736d596d)
 	)
+	(text_box "Errror list:\n\n1) Voltage drop on AMS1117 to high, min battery voltage 3.9V\n2) I2C_CSx shoud be I2C_SCLx\n3) I2C_SCL should be pulled up to 3.3V\n4) LDO on ESP32C3 module should be removed\n5) Battery \"+\" and \"-\" reversed on PCB silkscreen\n6) R6 should be 100k, R1 should be 390k\n7) Charge current should be lower (0.5A)"
+		(exclude_from_sim no)
+		(at 40.64 153.67 0)
+		(size 99.06 30.48)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(fill
+			(type none)
+		)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "239c479f-b666-4258-8957-66b3950d78ac")
+	)
 	(text "ESP"
 		(exclude_from_sim no)
 		(at 160.02 110.49 0)
