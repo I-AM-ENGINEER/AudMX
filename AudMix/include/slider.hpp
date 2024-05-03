@@ -42,6 +42,7 @@ class  Slider{
     struct calibration_t{
         float max_value;
         float min_value;
+        float mid_value;
     };
 
     struct config_t{
@@ -63,6 +64,7 @@ public:
 
     calibration_t calibrationGet( void ) { return _calibration; }
     void calibrationSetMinPoint( calibration_t& calibration ) { calibration.min_value = adcRawReadAccuracy(); }
+    void calibrationSetMidPoint( calibration_t& calibration ) { calibration.mid_value = adcRawReadAccuracy(); }
     void calibrationSetMaxPoint( calibration_t& calibration ) { calibration.max_value = adcRawReadAccuracy(); }
     void calibrationLoad( const calibration_t calibration ) { _calibration = calibration; }
 
@@ -73,6 +75,8 @@ public:
     void update( void );
 
     float adcRawRead( void );
+    float readPosition( void );
+    bool readButton( void );
 protected:
     config_t _cfg;
     calibration_t _calibration;

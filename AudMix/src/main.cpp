@@ -6,6 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "device.hpp"
+#include "nvs_flash.h"
 
 #define PROMPT_STR CONFIG_IDF_TARGET
 #define CMD_SET_ICON    "SET_ICON"
@@ -119,6 +120,18 @@ exit:
 void app_main() {
     //esp_log_level_set("*", ESP_LOG_DEBUG);
     esp_log_level_set("*", ESP_LOG_NONE);
+
+    esp_err_t err = nvs_flash_init();
+    if ((err == ESP_ERR_NVS_NO_FREE_PAGES) || (err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {
+        ESP_LOGW("NVS", "Erasing NVS partition...");
+        nvs_flash_erase();
+        err = nvs_flash_init();
+    };
+    if (err == ESP_OK) {
+        ESP_LOGI("NVS", "NVS partition initilized");
+    } else {
+        ESP_LOGE("NVS", "NVS partition initialization error: %d (%s)", err, esp_err_to_name(err));
+    };
 
     audMix.init();
     xTaskCreate(consoleTask, "console_task", 5000, NULL, 1500, NULL);

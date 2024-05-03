@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include "esp_console.h"
 #include "esp_adc/adc_oneshot.h"
+#include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
@@ -75,7 +76,7 @@ void Device::clalibrate( void ){
         auto calibration = slider.calibrationGet();
         slider.calibrationSetMinPoint(calibration);
         slider.calibrationLoad(calibration);
-        sprintf(msg, "min:%.3f", calibration.min_value);
+        snprintf(msg, sizeof(msg), "min:%.3f", calibration.min_value);
         slider.display.drawString(msg, 0, 20);
     }
     delay(2000);
@@ -92,25 +93,80 @@ void Device::clalibrate( void ){
     }
 
     // Maximum slider position capture
-    display->clear(TFT_BLACK);
-    display->drawString("Sampling...", 0, 0);
-    auto calibration = sliders[0].calibrationGet();
-    sprintf(msg, "min:%.3f", calibration.min_value);
-    display->drawString(msg, 0, 20);
+    {
+        display->clear(TFT_BLACK);
+        display->drawString("Sampling...", 0, 0);
+        auto calibration = sliders[0].calibrationGet();
+        snprintf(msg, sizeof(msg), "min:%.3f", calibration.min_value);
+        display->drawString(msg, 0, 20);
+    }
 
     for( auto& slider : sliders ){
         auto calibration = slider.calibrationGet();
         slider.calibrationSetMaxPoint(calibration);
         slider.calibrationLoad(calibration);
-        sprintf(msg, "min:%.3f", calibration.min_value);
+        snprintf(msg, sizeof(msg), "min:%.3f", calibration.min_value);
         slider.display.drawString(msg, 0, 20);
-        sprintf(msg, "max:%.3f", calibration.max_value);
+        snprintf(msg, sizeof(msg), "max:%.3f", calibration.max_value);
         slider.display.drawString(msg, 0, 30);
+    }
+
+    delay(2000);
+
+    display->drawString("Calibration", 0, 0);
+    display->drawString("Set slider", 0, 10);
+    display->drawString("to MIDLE", 0, 20);
+    display->drawString("position", 0, 30);
+
+    for( uint32_t i = 10; i > 0; i-- ){
+        snprintf(msg, sizeof(msg), "in %lu ...", i);
+        sliders[0].display.drawString(msg, 0, 40);
+        delay(1000);
+    }  
+
+    
+    // Middle slider position capture
+
+    {
+        display->clear(TFT_BLACK);
+        display->drawString("Sampling...", 0, 0);
+        auto calibration = sliders[0].calibrationGet();
+        snprintf(msg, sizeof(msg), "min:%.3f", calibration.min_value);
+        display->drawString(msg, 0, 20);
+        snprintf(msg, sizeof(msg), "min:%.3f", calibration.max_value);
+        display->drawString(msg, 0, 30);
+    }
+
+    for( auto& slider : sliders ){
+        auto calibration = slider.calibrationGet();
+        slider.calibrationSetMidPoint(calibration);
+        slider.calibrationLoad(calibration);
+        snprintf(msg, sizeof(msg), "min:%.3f", calibration.min_value);
+        slider.display.drawString(msg, 0, 20);
+        snprintf(msg, sizeof(msg), "max:%.3f", calibration.max_value);
+        slider.display.drawString(msg, 0, 30);
+        snprintf(msg, sizeof(msg), "mid:%.3f", calibration.mid_value);
+        slider.display.drawString(msg, 0, 40);
     }
 
     display->drawString("Calibration", 0, 0);
     display->drawString("complete", 0, 10);
+
+
+    nvs_handle_t nvs_handle;
+    nvs_open("CAL", NVS_READWRITE, &nvs_handle); 
+
+    uint32_t i = 0;
+    for( auto& slider : sliders ){
+        char tmp[10];
+        i++;
+        snprintf(tmp, sizeof(tmp), "CH%lu", i);
+        auto calibration = slider.calibrationGet();
+        nvs_set_blob(nvs_handle, tmp, &calibration, sizeof(calibration));
+    }
+    nvs_close(nvs_handle);
     
+
     delay(3000);
 }
 
@@ -135,8 +191,33 @@ void Device::init( void ){
     }
     virtDispInit(); // This must be here for normal real displays work
 
+
+    
     // If both buttons pressed on start, run calibration
-    if((sliders[0].adcRawRead() > 0.99) && (sliders[1].adcRawRead() > 0.99)){
+    if(((sliders[0].adcRawRead() > 0.99) && (sliders[1].adcRawRead() > 0.99))){
         clalibrate();
-    }    
+    }
+
+    
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open("CAL", NVS_READONLY, &nvs_handle); 
+    
+    if(err != ESP_OK){
+        nvs_close(nvs_handle);
+        clalibrate();
+    }else{
+        uint32_t i = 0;
+        for( auto& slider : sliders ){
+            char tmp[10];
+            i++;
+            snprintf(tmp, sizeof(tmp), "CH%lu", i);
+            auto calibration = slider.calibrationGet();
+            size_t size = sizeof(calibration);
+            nvs_get_blob(nvs_handle, tmp, &calibration, &size);
+            if(size == sizeof(calibration)){
+                slider.calibrationLoad(calibration);
+            }
+        }
+        nvs_close(nvs_handle);
+    }
 }
