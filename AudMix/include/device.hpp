@@ -11,6 +11,10 @@
 #define STRIP_TYPE          WS2812B
 #define STRIP_LED_COUNT     101
 #define STRIP_PIN           6
+//#define DISPLAY_WIDTH       64
+//#define DISPLAY_HEIGHT      48
+#define ICON_WIDTH       60
+#define ICON_HEIGHT      44
 
 void stripTask( void *args );
 
@@ -25,6 +29,7 @@ class Device{
     CRGB *_ws2812_output_buffer;
     CRGB _ws2812_buffer_a[STRIP_LED_COUNT];
     CRGB _ws2812_buffer_b[STRIP_LED_COUNT];
+    bool _displays_update = true;
 public:
     Battery battery;
     Slider sliders[SLIDERS_COUNT];

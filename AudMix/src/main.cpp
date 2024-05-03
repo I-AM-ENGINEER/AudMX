@@ -83,16 +83,15 @@ void stripAnimation( void *args ){
     }
 }
 
-/*
 void consoleTask( void *args ){
     std::string str = "";
 
     while (1){
         int res = 0;
-        std::cin >> str;
+        std::getline(std::cin, str);
 
         if(str.compare(0, strlen(CMD_SET_ICON), CMD_SET_ICON) == 0){
-            uint8_t icon_array[ICON_SIZE_PX*ICON_SIZE_PX/8];
+            uint8_t icon_array[((ICON_WIDTH+7)/8)*ICON_HEIGHT];
 
             std::string afterPrefix = str.substr(strlen(CMD_SET_ICON)+1);
             int display_num = std::atoi(afterPrefix.c_str());
@@ -102,8 +101,8 @@ void consoleTask( void *args ){
             }
             
             std::cin.read((char*)icon_array, sizeof(icon_array));
-            sliders[display_num].setIcon(icon_array, ICON_SIZE_PX, ICON_SIZE_PX);
-            sliders[display_num].displayIcon(true);
+            audMix.sliders[display_num].setIcon(icon_array, ICON_WIDTH, ICON_HEIGHT);
+            audMix.sliders[display_num].displayIcon(true);
         }else{
             res = -1;
         }
@@ -115,15 +114,15 @@ exit:
         }
         vTaskDelay(1);
     }
-}*/
+}
 
 void app_main() {
     //esp_log_level_set("*", ESP_LOG_DEBUG);
-    esp_log_level_set("*", ESP_LOG_ERROR);
+    esp_log_level_set("*", ESP_LOG_NONE);
 
     audMix.init();
-    xTaskCreate(stripAnimation, "animation", 3000, NULL, 1900, NULL);
-    xTaskCreate(displayTask, "test_task", 8000, NULL, 1000, NULL);
-    xTaskCreate(stripTask, "strip_", 3000, NULL, 2000, NULL);
-    //xTaskCreate(consoleTask, "console_task", 5000, NULL, 2000, NULL);
+    xTaskCreate(consoleTask, "console_task", 5000, NULL, 1500, NULL);
+    xTaskCreate(stripAnimation, "strip_ani_task", 1000, NULL, 1900, NULL);
+    xTaskCreate(displayTask, "displays_task", 3000, NULL, 1000, NULL);
+    xTaskCreate(stripTask, "strip_task", 3000, NULL, 2000, NULL);
 }

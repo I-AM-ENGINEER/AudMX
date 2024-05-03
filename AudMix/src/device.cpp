@@ -50,14 +50,68 @@ void Device::virtDispInit( void ){
 }
 
 void Device::clalibrate( void ){
-    char tmp[10];
-    int i = 0;
+    char msg[11];
+    delay(100);
+
+    LGFX_SSD1306 *display = &sliders[0].display;
+    
+    display->setTextSize(1.0f);
+    display->drawString("Calibration", 0, 0);
+    display->drawString("Set slider", 0, 10);
+    display->drawString("to MINIMUM", 0, 20);
+    display->drawString("position", 0, 30);
+
+    for( uint32_t i = 8; i > 0; i-- ){
+        snprintf(msg, sizeof(msg), "in %lu ...", i);
+        sliders[0].display.drawString(msg, 0, 40);
+        delay(1000);
+    }
+
+    // Minimum slider position capture
+    display->clear(TFT_BLACK);
+    display->drawString("Sampling...", 0, 0);
 
     for( auto& slider : sliders ){
-        sprintf(tmp, "test %d", i++);
-        slider.display.setTextSize(1);
-        slider.display.drawString(tmp, 0, 0);
+        auto calibration = slider.calibrationGet();
+        slider.calibrationSetMinPoint(calibration);
+        slider.calibrationLoad(calibration);
+        sprintf(msg, "min:%.3f", calibration.min_value);
+        slider.display.drawString(msg, 0, 20);
     }
+    delay(2000);
+
+    display->drawString("Calibration", 0, 0);
+    display->drawString("Set slider", 0, 10);
+    display->drawString("to MAXIMUM", 0, 20);
+    display->drawString("position", 0, 30);
+
+    for( uint32_t i = 8; i > 0; i-- ){
+        snprintf(msg, sizeof(msg), "in %lu ...", i);
+        sliders[0].display.drawString(msg, 0, 40);
+        delay(1000);
+    }
+
+    // Maximum slider position capture
+    display->clear(TFT_BLACK);
+    display->drawString("Sampling...", 0, 0);
+    auto calibration = sliders[0].calibrationGet();
+    sprintf(msg, "min:%.3f", calibration.min_value);
+    display->drawString(msg, 0, 20);
+
+    for( auto& slider : sliders ){
+        auto calibration = slider.calibrationGet();
+        slider.calibrationSetMaxPoint(calibration);
+        slider.calibrationLoad(calibration);
+        sprintf(msg, "min:%.3f", calibration.min_value);
+        slider.display.drawString(msg, 0, 20);
+        sprintf(msg, "max:%.3f", calibration.max_value);
+        slider.display.drawString(msg, 0, 30);
+    }
+
+    display->drawString("Calibration", 0, 0);
+    display->drawString("complete", 0, 10);
+    
+    delay(3000);
 }
 
 void Device::init( void ){
@@ -74,10 +128,15 @@ void Device::init( void ){
     gpio_config(&pullup_i2c);
     gpio_set_level(GPIO_NUM_9, 1);
 
-    virtDispInit();
 
     for( auto& slider : sliders ){
         slider.init(&_sliders_adc);
         delay(1);
     }
+    virtDispInit(); // This must be here for normal real displays work
+
+    // If both buttons pressed on start, run calibration
+    if((sliders[0].adcRawRead() > 0.99) && (sliders[1].adcRawRead() > 0.99)){
+        clalibrate();
+    }    
 }

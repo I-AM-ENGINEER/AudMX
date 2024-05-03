@@ -6,79 +6,6 @@
 #include <stdio.h>
 #include <string>
 
-void Slider::calibrate( void ){
-    /*
-    char msg[11];
-    float accumulator = 0;
-    float raw_value;
-    float min_position;
-    float max_position;
-
-    // Minimum slider position set message
-    display.setTextSize(1.0f);
-    display.drawString("Calibration", 0, 0);
-    display.drawString("Set slider", 0, 10);
-    display.drawString("to MINIMUM", 0, 20);
-    display.drawString("position", 0, 30);
-    for(uint32_t i = 3; i > 0; i--){
-        snprintf(msg, sizeof(msg), "in %lu ...", i);
-        display.drawString(msg, 0, 40);
-        delay(1000);
-    }
-    
-    // Minimum slider position capture
-    display.clear(TFT_BLACK);
-    display.drawString("Sampling...", 0, 0);
-    display.setTextSize(2.0f);
-    for(uint32_t i = 0; i < 1024; i++){
-        raw_value = readPercantage();
-        accumulator += raw_value;
-        snprintf(msg, sizeof(msg), "%.3f", raw_value);
-        display.drawString(msg, 0, 10);
-    }
-    min_position = accumulator/1024.0f;
-    accumulator = 0;
-
-    // Maximum slider position set message
-    display.clear(TFT_BLACK);
-    display.setTextSize(1.0f);
-    display.drawString("Calibration", 0, 0);
-    display.drawString("Set slider", 0, 10);
-    display.drawString("to MAXIMUM", 0, 20);
-    display.drawString("position", 0, 30);
-    for(uint32_t i = 3; i > 0; i--){
-        snprintf(msg, sizeof(msg), "in %lu ...", i);
-        display.drawString(msg, 0, 40);
-        delay(1000);
-    }
-
-    // Maxomum slider position capture
-    display.clear(TFT_BLACK);
-    display.setTextSize(1.0f);
-    display.drawString("Sampling...", 0, 0);
-    display.setTextSize(2.0f);
-    for(uint32_t i = 0; i < 1024; i++){
-        raw_value = readPercantage();
-        accumulator += raw_value;
-        snprintf(msg, sizeof(msg), "%.3f", raw_value);
-        display.drawString(msg, 0, 10);
-    }
-    max_position = accumulator/1024.0f;
-    
-    display.clear(TFT_BLACK);
-    display.setTextSize(1.0f);
-    display.drawString("Calibration", 0, 0);
-    display.drawString("complete!", 0, 10);
-    snprintf(msg, sizeof(msg), "min: %.3f", min_position);
-    display.drawString(msg, 0, 20);
-    snprintf(msg, sizeof(msg), "max: %.3f", max_position);
-    display.drawString(msg, 0, 30);
-
-    _calibration.max_value = max_position;
-    _calibration.min_value = min_position;
-    */
-}
-
 bool Slider::displayIcon( bool display_icon ){
     _ico_display = display_icon;
     return _ico_display;
@@ -92,10 +19,11 @@ void Slider::update( void ){
     static uint8_t h = 0;
     display.setTextSize(1.0f);
     char msg[11];
-    snprintf(msg, sizeof(msg), "%.0f", adcRawRead() * 4095.0f);
+    snprintf(msg, sizeof(msg), "%.0f    ", adcRawRead() * 4095.0f);
     if(_ico_display){
-        display.drawBitmap(0, 0, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF);
+        display.drawBitmap(0, 0, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF, 0x000000);
     }
+    display.drawString(msg, 0, 0);
 }
 
 int32_t Slider::setIcon( const uint8_t *icon, uint32_t size_x, uint32_t size_y ){
@@ -157,7 +85,7 @@ float Slider::adcRawRead( void ){
 }
 
 float Slider::adcRawReadAccuracy( void ){
-    const int sample_count = 256;
+    const int sample_count = 16384;
     float accumulator = 0.0f;
     for(uint32_t i = 0; i < (uint32_t)sample_count; i++){
         accumulator += adcRawRead();
