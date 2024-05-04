@@ -35,6 +35,5 @@ public:
     Slider sliders[SLIDERS_COUNT];
     void* strip;
     Device( void ) {}
-    void update( void );
     void init( void );
 };

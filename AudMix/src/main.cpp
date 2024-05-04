@@ -68,9 +68,21 @@ void stripTask( void *args ){
     }
 }
 
+void readTask( void *args ){
+    while (1){
+        for( auto& slider : audMix.sliders ){
+            slider.updatePosition();
+        }
+        vTaskDelay(1);
+    }
+    
+}
+
 void displayTask( void *args ){
     while(1){
-        audMix.update();
+        for( auto& slider : audMix.sliders ){
+            slider.updateDisplay();
+        }
         vTaskDelay(50);
     }
 }
@@ -136,6 +148,7 @@ void app_main() {
     audMix.init();
     xTaskCreate(consoleTask, "console_task", 5000, NULL, 1500, NULL);
     xTaskCreate(stripAnimation, "strip_ani_task", 1000, NULL, 1900, NULL);
+    xTaskCreate(readTask, "read_task", 3000, NULL, 1200, NULL);
     xTaskCreate(displayTask, "displays_task", 3000, NULL, 1000, NULL);
     xTaskCreate(stripTask, "strip_task", 3000, NULL, 2000, NULL);
 }

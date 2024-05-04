@@ -29,6 +29,32 @@ constexpr uint8_t bitmap_test[] = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xfd, 0xfb, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfd, 0xfb, 0xf0
 };
 
+class HysteresisFilter {
+private:
+    float _threshold; // Threshold for minimum change
+    float _min;
+    float _max;
+    float _previous;
+public:
+    HysteresisFilter(float threshold, float min, float max) : _threshold(threshold), _min(min), _max(max), _previous(min){}
+
+    float filter(float input) {
+        input = std::clamp(input, _min, _max);
+        if(input < (_min + _threshold)){
+            _previous = _min;
+        }else if(input > (_max - _threshold)){
+            _previous = _max;
+        }
+        
+        if(std::abs(input - _previous) > _threshold) {
+            _previous = input;
+            return input;
+        }else{
+            return _previous;
+        }
+    }
+};
+
 class  Slider{
     adc_oneshot_unit_handle_t*    _adc_handle;
     adc_cali_handle_t               _adc_cali;
@@ -38,6 +64,9 @@ class  Slider{
     uint16_t _ico_size_x = 0;
     uint16_t _ico_size_y = 0;
     bool _ico_display = false;
+
+    float _position_filter_buff[11];
+    size_t _position_filter_buff_idx = 0;
 
     struct calibration_t{
         float max_value;
@@ -56,7 +85,10 @@ class  Slider{
         bool double_leds                    =           true;
     };
     float adcRawReadAccuracy( void );
+    HysteresisFilter histFilter;
 public:
+    Slider( void ) : histFilter(0.01f, 0.0f, 1.0f) {}
+
     LGFX_SSD1306 display;
     StripFrame strip;
     const config_t& config( void ) const { return _cfg; }
@@ -72,8 +104,10 @@ public:
     int32_t setIcon( const uint8_t *icon, uint32_t size_x, uint32_t size_y );
     bool displayIcon( bool display_icon );
     bool displayIcon( void );
-    void update( void );
+    void updatePosition( void );
+    void updateDisplay( void );
 
+    float adcFilteredRead( void );
     float adcRawRead( void );
     float readPosition( void );
     bool readButton( void );

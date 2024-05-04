@@ -24,12 +24,6 @@ void Device::adcInit( void ){
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &_sliders_adc));
 }
 
-void Device::update( void ){
-    for( auto& slider : sliders ){
-        slider.update();
-    }
-}
-
 void Device::consoleInit( void ){
     esp_console_repl_t *repl = NULL;
     esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();

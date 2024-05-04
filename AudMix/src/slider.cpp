@@ -5,6 +5,7 @@
 #include "esp_adc/adc_oneshot.h"
 #include <stdio.h>
 #include <string>
+#include <algorithm>
 
 // Thanks chatgpt for this function
 static  float exponentialToLinear( float value, float middleValue ) {
@@ -35,14 +36,22 @@ bool Slider::displayIcon( void ){
     return _ico_display;
 }
 
-void Slider::update( void ){
+void Slider::updatePosition( void ){
+    _position_filter_buff[_position_filter_buff_idx] = adcRawRead();
+    _position_filter_buff_idx++;
+    if(_position_filter_buff_idx == (sizeof(_position_filter_buff)/sizeof(*_position_filter_buff))){
+        _position_filter_buff_idx = 0;
+    }
+}
+
+void Slider::updateDisplay( void ){
     display.setTextSize(1.0f);
     char msg[11];
     
     if(readButton()){
         display.drawString("Button!", 0, 20);
     }else{
-        snprintf(msg, sizeof(msg), "%.1f    ", readPosition() * 100.0f);
+        snprintf(msg, sizeof(msg), "%.0f    ", readPosition() * 100.0f);
         display.drawString("       ", 0, 20);
         display.drawString(msg, 0, 0);
     }
@@ -112,6 +121,15 @@ float Slider::adcRawRead( void ){
     return percentage;
 }
 
+float Slider::adcFilteredRead( void ){
+    const size_t buff_size = sizeof(_position_filter_buff)/sizeof(*_position_filter_buff);
+    float tmp_buffer[buff_size];
+    memcpy(tmp_buffer, _position_filter_buff, sizeof(_position_filter_buff));
+    std::sort(tmp_buffer, tmp_buffer + buff_size);
+    float median = tmp_buffer[buff_size/2];
+    return median;
+}
+
 float Slider::adcRawReadAccuracy( void ){
     const int sample_count = 16384;
     float accumulator = 0.0f;
@@ -122,7 +140,7 @@ float Slider::adcRawReadAccuracy( void ){
 }
 
 bool Slider::readButton( void ){
-    float adc_read = adcRawRead();
+    float adc_read = adcFilteredRead();
     if(adc_read > 0.99){
         return true;
     }
@@ -130,10 +148,11 @@ bool Slider::readButton( void ){
 }
 
 float Slider::readPosition( void ){
-    float adc_read = adcRawRead();
+    float adc_read = adcFilteredRead();
     float remaped = map(adc_read, _calibration.min_value, _calibration.max_value, 0.0f, 1.0f);
     float remaped_mid = map(_calibration.mid_value, _calibration.min_value, _calibration.max_value, 0.0f, 1.0f);
     float exponential = std::clamp(remaped, 0.0f, 1.0f);
     float linear = exponentialToLinear(exponential, remaped_mid);
+    linear = histFilter.filter(linear);
     return linear;
 }
