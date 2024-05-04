@@ -45,21 +45,18 @@ void Slider::updatePosition( void ){
 }
 
 void Slider::updateDisplay( void ){
+    /*
     display.setTextSize(1.0f);
     char msg[11];
-    
+
     if(readButton()){
         display.drawString("Button!", 0, 20);
     }else{
         snprintf(msg, sizeof(msg), "%.0f    ", readPosition() * 100.0f);
         display.drawString("       ", 0, 20);
         display.drawString(msg, 0, 0);
-    }
-    
-
-    if(_ico_display){
-        //display.drawBitmap(0, 0, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF, 0x000000);
-    }
+    }*/
+    display.drawBitmap(0, 0, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF, 0x000000);
 }
 
 int32_t Slider::setIcon( const uint8_t *icon, uint32_t size_x, uint32_t size_y ){
@@ -102,7 +99,7 @@ int32_t Slider::init( adc_oneshot_unit_handle_t* adc_handle ){
     };
     ESP_ERROR_CHECK(adc_oneshot_config_channel(*_adc_handle, _cfg.adc_channel, &config));
     
-    setIcon(bitmap_test, 60, 44);
+    memset(_ico_buffer, 0, sizeof(_ico_buffer));
     displayIcon(true);
     return 0;
 }
@@ -140,7 +137,12 @@ float Slider::adcRawReadAccuracy( void ){
 }
 
 bool Slider::readButton( void ){
-    float adc_read = adcFilteredRead();
+    const size_t buff_size = sizeof(_position_filter_buff)/sizeof(*_position_filter_buff);
+    float tmp_buffer[buff_size];
+    memcpy(tmp_buffer, _position_filter_buff, sizeof(_position_filter_buff));
+    std::sort(tmp_buffer, tmp_buffer + buff_size);
+
+    float adc_read = tmp_buffer[(buff_size*2)/3];
     if(adc_read > 0.99){
         return true;
     }
@@ -154,5 +156,14 @@ float Slider::readPosition( void ){
     float exponential = std::clamp(remaped, 0.0f, 1.0f);
     float linear = exponentialToLinear(exponential, remaped_mid);
     linear = histFilter.filter(linear);
+    if(readButton()){
+        _last_button_pressed_timestamp = esp_timer_get_time();
+    }
+
+    // Ignore 300ms changes after button released (or pressed now)
+    if((esp_timer_get_time() - _last_button_pressed_timestamp) < 300000LL){
+        return _old_slider_pos;
+    }
+    _old_slider_pos = linear;
     return linear;
 }
