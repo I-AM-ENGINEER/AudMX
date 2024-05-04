@@ -11,3 +11,5 @@
 PCB/AudMixTop/AudMix.kicad_prl
 PCB/AudMixBottom/AudMixBottom.kicad_prl
 AudMix/sdkconfig.seeed_xiao_esp32c3.old
+PCB/AudMixBottom/fp-info-cache
+PCB/AudMixBottom/AudMixBottom_homemade.kicad_prl
