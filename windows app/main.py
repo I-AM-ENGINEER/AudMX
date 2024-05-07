@@ -73,7 +73,8 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс прил�
 
 class MainClass(QtWidgets.QWidget):
     volLevelApp = []
-    dictVolumeApp = {}
+    num_load_icon = 0
+    # dictVolumeApp = {}
     def __init__(self, dict_monitor):
         super(MainClass, self).__init__()
         global dict_monitor_global
@@ -86,21 +87,34 @@ class MainClass(QtWidgets.QWidget):
         self.trayIcon.show()
         pid, vid = self.readINIfile()
         self.ser = seriall(vid, pid, 115200)
-        self.timer.timeout.connect(self.ser.startSerialAutoConnect)
+
         self.ser.SignalSerialStartOk.connect(self.startMassege)
         self.ser.SignalReadButton.connect(lambda comand: self.keyPleerHandle(comand))
         self.ser.SignalReadVoluem.connect(lambda comand: self.levelVolHandle(comand))
+        self.ser.SignalSetIcon.connect(lambda ans: self.loadIconOnESP(ans))
+
 
         self.audioSessions = AudioUtilities.GetAllSessions()
-        self.timer.start()
+
         self.timer_2 = QTimer()
         self.timer_2.timeout.connect(self.updateStyleUI)
         self.timer_2.setInterval(30000)
         self.timer_2.start()
         self.updateStyleUI()
-        self.process_folder(".\\icon")
+        # self.process_folder(".\\icon")
         # for image_byte in range(self.process_folder(".\\icon")):
         #     pass
+        self.timer_ser_con = QTimer()
+        self.timer_ser_con.timeout.connect(self.ser.startSerialAutoConnect)
+        self.timer_ser_con.setInterval(1500)
+        self.timer_ser_con.start()
+
+        self.trayIcon.SignalLIght1.connect(self.handleSignalLIght1)
+        self.trayIcon.SignalLIght2.connect(self.handleSignalLIght2)
+        self.trayIcon.SignalLIght3.connect(self.handleSignalLIght3)
+
+        self.mas_icon = [[icon, num] for num, icon in enumerate(self.process_folder(".\\icon"))]
+
 
     def updateStyleUI(self):
         """
@@ -152,17 +166,28 @@ class MainClass(QtWidgets.QWidget):
         :param comand: строка с командой типа ''
         :return: NONE
         """
-        comand = str(comand)
+        comand = str(comand).split("|")
+        if (len(comand) != 5):
+            return
+        for num_app, volume_level in enumerate(comand):
 
-        for session in self.audioSessions:
-            volume = session._ctl.QueryInterface(ISimpleAudioVolume)
+            for session in self.audioSessions:
+                volume = session._ctl.QueryInterface(ISimpleAudioVolume)
 
-            if session.Process and session.Process.name() == self.volLevelApp[int(comand[10:-1])] + ".exe":
-                # print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
-                volume.SetMasterVolume(float(comand[12:-1]/100, None))
-            else:
-                if self.trayIcon.flag_warning:
-                    self.trayIcon.showMessage("ERROR", self.volLevelApp[int(comand[10:-1])][8:] + '.exe not found')
+                if session.Process and session.Process.name() == self.volLevelApp[num_app][0] + ".exe":
+                    # print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
+                    try:
+                        volume_level = int(volume_level)
+                    except:
+                        return
+                    volume.SetMasterVolume(float(volume_level)/1024, None)
+                    self.volLevelApp[num_app][1] = True
+                    break
+
+            # if self.trayIcon.flag_warning:
+            #     if (self.volLevelApp[num_app][1] == True):
+            #         self.trayIcon.showMessage("ERROR", self.volLevelApp[num_app][0] + '.exe not found')
+            #         self.volLevelApp[num_app][1] = False
     def handleSignalLIght1(self):
         self.ser.writeSerial("SET_LIGHT:white")
     def handleSignalLIght2(self):
@@ -182,8 +207,9 @@ class MainClass(QtWidgets.QWidget):
             # Проверяем, что файл имеет расширение .bmp
             # i = 0
             if filename.endswith(".bmp"):
-
-                self.volLevelApp.append(str(filename[8:-4]))
+                if (len(self.volLevelApp) > 4):
+                    return byte_arrays
+                self.volLevelApp.append([str(filename[8:-4]), True])
                 # self.dictVolumeApp[i] = filename[8:-4]
                 # i += 1
                 # print(filename[2:-4])
@@ -191,7 +217,9 @@ class MainClass(QtWidgets.QWidget):
                 file_path = os.path.join(folder_path, filename)
                 # Преобразуем изображение в байтовый массив и добавляем его в список
                 byte_array = self.bmp_to_byte_array(file_path)
+
                 byte_arrays.append(byte_array)
+
         return byte_arrays
 
 
@@ -208,20 +236,25 @@ class MainClass(QtWidgets.QWidget):
             raise ValueError("Изображение не является монохромным")
         # Получаем данные изображения в виде байтов
         img_bytes = img.tobytes()
+        print("bmp_to_byte_array: ", img_bytes)
         return img_bytes
 
     def startMassege(self):
         """
-        #вызываеться послесигнала о подключении и запускает перврначальную настройку(записывает картинки в микщер) и подключает сигналы
+        #вызываеться послесигнала о подключении и запускает перврначальную настройку(записывает картинки в микщер)
         :return:
         """
-        self.trayIcon.SignalLIght1.connect(self.handleSignalLIght1)
-        self.trayIcon.SignalLIght2.connect(self.handleSignalLIght2)
-        self.trayIcon.SignalLIght3.connect(self.handleSignalLIght3)
-        self.timer.stop()
-        for image_byte in range(self.process_folder(".\\icon")):
-            self.ser.writeSerial("SET_ICON:" + str(image_byte))
 
+        self.timer_ser_con.stop()
+        self.loadIconOnESP()
+
+    def loadIconOnESP(self, ans = 0):
+        self.num_load_icon += ans
+        print(len(self.mas_icon[self.num_load_icon][0]))
+        # self.ser.writeSerial("SET_ICON 1\r\n")
+        self.ser.writeSerial("SET_ICON " + str(self.mas_icon[self.num_load_icon][1]) + "\r\n")
+        self.ser.writeByteSerial(self.mas_icon[self.num_load_icon][0])
+        self.num_load_icon += 1
 
     # def editSize(self, set_screen_name='', **kwargs):  # отрисовка окна с учетем размера экрана
     #     global old_screen_skale

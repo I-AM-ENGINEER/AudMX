@@ -9,12 +9,13 @@ from PySide6.QtCore import QIODevice, Signal, QObject
 # PC<-ESP
 # SET_VALUE:num:value   -> num=(int[0:4]) value=(int [0:100])
 # SET_BUTTON:str   -> str=(prev/next/play)
-
+# vid 12346 pid 4097
 
 class seriall(QObject):
     productIdentifier = 0
     vendorIdentifier = 0
     BaudRate = 0
+    comand_Buff = ""
     SignalReadPort = Signal(list)
     SignalSerialRegOk = Signal()
     SignalSerialStartOk = Signal()
@@ -24,6 +25,7 @@ class seriall(QObject):
     SignalReadLine = Signal(str)
     SignalReadButton = Signal(str)
     SignalReadVoluem = Signal(str)
+    SignalSetIcon = Signal(int)
 
     def __init__(self, vendorIdentifier_ = 0, productIdentifier_ = 0, BaudRate_ = 0):
         super().__init__()
@@ -38,13 +40,14 @@ class seriall(QObject):
 
     def readPort(self):
         """
-        #запускаем сериал и счтываем порты(записываем в comboBox)
+        #
         :return: ports список всех работующих сериал портов
         """
         ports = QSerialPortInfo().availablePorts()
-        # ports = [port.portName() for port in ports]
-        self.SignalReadPort.emit(ports)
+        ports_name = [port.portName() for port in ports]
+        self.SignalReadPort.emit(ports_name)
         return ports
+
     def startSerialAutoConnect(self):
         """
         #авто запуск сериал порта
@@ -54,7 +57,7 @@ class seriall(QObject):
         portList = self.readPort()
         for port in portList:
             if port.productIdentifier() == self.productIdentifier and port.vendorIdentifier() == self.vendorIdentifier:
-                self.openSerialAndStartMessage(port, self.BaudRate)
+                self.openSerialAndStartMessage(port.portName(), self.BaudRate)
 
     def openSerialAndStartMessage(self, currertPort: str, BaudRate: int):                   #начинаем общение с сериалом
         """
@@ -69,6 +72,7 @@ class seriall(QObject):
         self.serial.readyRead.connect(self.readInpurAndOutput)
         self.SignalSerialStartOk.emit()
 
+
     def readInpurAndOutput(self):
         """
         #оброботчик всех приходящих пакетов
@@ -76,12 +80,18 @@ class seriall(QObject):
         :return: None
         """
         inputSrt = self.serial.readLine()
-        print(inputSrt)
-        inputSrt = str(inputSrt, 'utf-8')
-        if inputSrt.find("SET_BUTTON:") != -1:
-            self.SignalReadButton.emit(inputSrt[12])
-        elif inputSrt.find("SET_VALUE") != -1:
-            self.SignalReadVoluem.emit(inputSrt[12])
+        print("ser read: ", inputSrt)
+        if (inputSrt != self.comand_Buff):
+            self.comand_Buff = inputSrt
+            inputSrt = str(inputSrt, 'utf-8')
+            if inputSrt.find("SET_BUTTON:") != -1:
+                self.SignalReadButton.emit(inputSrt[12])
+            elif inputSrt.find("|") != -1:
+                self.SignalReadVoluem.emit(inputSrt)
+            elif inputSrt.find("OK") != -1:
+                self.SignalSetIcon.emit(0)
+            elif inputSrt.find("ERROR: -1") != -1:
+                self.SignalSetIcon.emit(-1)
 
     def closeSerial(self):                 #закрываем serial и стираем все состояния кнопок в приложении
         self.serial.close()
@@ -93,4 +103,10 @@ class seriall(QObject):
         :return: None
         """
         self.flag_read_data = True
+        print("ser write: ", iner)
         self.serial.write(str(iner).encode())
+
+    def writeByteSerial(self, iner):
+        self.flag_read_data = True
+        print("ser write Byte: ", iner)
+        self.serial.write(iner)
