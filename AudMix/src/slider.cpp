@@ -3,6 +3,7 @@
 #include "system.hpp"
 #include "esp_log.h"
 #include "esp_adc/adc_oneshot.h"
+#include "esp_timer.h"
 #include <stdio.h>
 #include <string>
 #include <algorithm>
@@ -56,7 +57,25 @@ void Slider::updateDisplay( void ){
         display.drawString("       ", 0, 20);
         display.drawString(msg, 0, 0);
     }*/
-    display.drawBitmap(0, 0, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF, 0x000000);
+    // Every 120s change position for slowdown degradation
+    int32_t t = (int32_t)(esp_timer_get_time() / 1000 / 1000 / 120);
+    int32_t pos_x = (t % 2) * 4;
+    int32_t pos_y = ((t % 4) / 2) * 4;
+
+    display.setColor(TFT_BLACK);
+    if(pos_x == 0){
+        display.fillRect(60,0,4,48);
+    }else{
+        display.fillRect(0,0,4,48);
+    }
+
+    if(pos_y == 0){
+        display.fillRect(0,44,64,4);
+    }else{
+        display.fillRect(0,0,64,4);
+    }
+    
+    display.drawBitmap(pos_x, pos_y, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF, 0x000000);
 }
 
 int32_t Slider::setIcon( const uint8_t *icon, uint32_t size_x, uint32_t size_y ){
