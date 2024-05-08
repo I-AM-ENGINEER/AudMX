@@ -74,6 +74,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс прил�
 class MainClass(QtWidgets.QWidget):
     volLevelApp = []
     num_load_icon = 0
+    teat_perer = 0
     # dictVolumeApp = {}
     def __init__(self, dict_monitor):
         super(MainClass, self).__init__()
@@ -86,7 +87,7 @@ class MainClass(QtWidgets.QWidget):
         self.trayIcon = SystemTrayIcon(icon, self)
         self.trayIcon.show()
         pid, vid = self.readINIfile()
-        self.ser = seriall(vid, pid, 115200)
+        self.ser = seriall(vid, pid, 1000000)
 
         self.ser.SignalSerialStartOk.connect(self.startMassege)
         self.ser.SignalReadButton.connect(lambda comand: self.keyPleerHandle(comand))
@@ -108,6 +109,11 @@ class MainClass(QtWidgets.QWidget):
         self.timer_ser_con.timeout.connect(self.ser.startSerialAutoConnect)
         self.timer_ser_con.setInterval(1500)
         self.timer_ser_con.start()
+
+        self.timer_test = QTimer()
+        self.timer_test.timeout.connect(self.testFunc)
+        self.timer_test.setInterval(100)
+
 
         self.trayIcon.SignalLIght1.connect(self.handleSignalLIght1)
         self.trayIcon.SignalLIght2.connect(self.handleSignalLIght2)
@@ -249,14 +255,33 @@ class MainClass(QtWidgets.QWidget):
         self.loadIconOnESP()
 
     def loadIconOnESP(self, ans = 0):
-        self.num_load_icon += ans
+        # if (len(self.mas_icon[self.num_load_icon][0]) < self.num_load_icon + 1):
+        #     return
+        # self.num_load_icon += ans
         print(len(self.mas_icon[self.num_load_icon][0]))
         # self.ser.writeSerial("SET_ICON 1\r\n")
-        self.ser.writeSerial("SET_ICON " + str(self.mas_icon[self.num_load_icon][1]) + "\r\n")
-        self.ser.writeByteSerial(self.mas_icon[self.num_load_icon][0])
-        self.num_load_icon += 1
+        self.ser.writeSerial("SET_ICON " + str(self.mas_icon[self.num_load_icon][1]) + "\n")
+        self.timer_test.start()
 
-    # def editSize(self, set_screen_name='', **kwargs):  # отрисовка окна с учетем размера экрана
+        # for i in range(len(self.mas_icon[self.num_load_icon][0])):
+        #     self.ser.writeByteSerial(self.mas_icon[self.num_load_icon][0][i])
+
+
+
+
+
+    def testFunc(self):
+        self.teat_perer += 1
+        print(len(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64]) , self.teat_perer, self.num_load_icon)
+        self.ser.writeByteSerial(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64])
+        if (self.teat_perer == 6):
+            self.timer_test.stop()
+            self.teat_perer = 0
+            self.num_load_icon += 1
+
+
+
+            # def editSize(self, set_screen_name='', **kwargs):  # отрисовка окна с учетем размера экрана
     #     global old_screen_skale
     #     if kwargs.get('constrctorTable', False):
     #         scale = old_screen_skale

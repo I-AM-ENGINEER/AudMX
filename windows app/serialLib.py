@@ -26,6 +26,8 @@ class seriall(QObject):
     SignalReadButton = Signal(str)
     SignalReadVoluem = Signal(str)
     SignalSetIcon = Signal(int)
+    flag_do_read = 0
+    inputSrt = ""
 
     def __init__(self, vendorIdentifier_ = 0, productIdentifier_ = 0, BaudRate_ = 0):
         super().__init__()
@@ -79,19 +81,36 @@ class seriall(QObject):
         при командах вызывает соответствующие сигналы
         :return: None
         """
-        inputSrt = self.serial.readLine()
-        print("ser read: ", inputSrt)
-        if (inputSrt != self.comand_Buff):
-            self.comand_Buff = inputSrt
-            inputSrt = str(inputSrt, 'utf-8')
-            if inputSrt.find("SET_BUTTON:") != -1:
-                self.SignalReadButton.emit(inputSrt[12])
-            elif inputSrt.find("|") != -1:
-                self.SignalReadVoluem.emit(inputSrt)
-            elif inputSrt.find("OK") != -1:
-                self.SignalSetIcon.emit(0)
-            elif inputSrt.find("ERROR: -1") != -1:
-                self.SignalSetIcon.emit(-1)
+        # inputSrt = self.serial.readLine()
+        inputSrtB = self.serial.readAll()
+
+
+        if (self.flag_do_read == 1):
+            self.inputSrt += str(inputSrtB, 'utf-8')
+        else:
+            self.inputSrt = str(inputSrtB, 'utf-8')
+
+        if (self.inputSrt.find("\n") == -1):
+            print("------------------------", len(self.inputSrt), self.inputSrt.find("\n"))
+            self.flag_do_read = 1
+            return
+        else:
+            self.flag_do_read = 0
+        print("ser read: ", self.inputSrt[:-1])
+
+        # temp = inputSrt[0:self.inputSrt.find("\n")]
+        # inputSrt = temp
+
+        if self.inputSrt.find("SET_BUTTON:") != -1:
+            self.SignalReadButton.emit(self.inputSrt[12])
+        elif self.inputSrt.find("|") != -1:
+            if (self.inputSrt != self.comand_Buff):
+                self.comand_Buff = self.inputSrt
+                self.SignalReadVoluem.emit(self.inputSrt)
+        elif self.inputSrt.find("OK") != -1:
+            self.SignalSetIcon.emit(0)
+        # elif self.inputSrt.find("ERROR: -1") != -1:
+        #     self.SignalSetIcon.emit(-1)
 
     def closeSerial(self):                 #закрываем serial и стираем все состояния кнопок в приложении
         self.serial.close()
@@ -103,10 +122,10 @@ class seriall(QObject):
         :return: None
         """
         self.flag_read_data = True
-        print("ser write: ", iner)
+        print("ser write:", iner)
         self.serial.write(str(iner).encode())
 
     def writeByteSerial(self, iner):
         self.flag_read_data = True
         print("ser write Byte: ", iner)
-        self.serial.write(iner)
+        self.serial.write(bytes(iner))
