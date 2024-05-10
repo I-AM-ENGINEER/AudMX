@@ -39,8 +39,8 @@ public:
         {
             auto cfg = _bus_instance.config();
             cfg.i2c_port    = 0;
-            cfg.freq_write  = 400000; // Frequency here not real
-            cfg.freq_read   = 400000;
+            cfg.freq_write  = 100000; // Frequency here not real
+            cfg.freq_read   = 100000;
             cfg.pin_scl     = _cfg.pin_scl;
             cfg.pin_sda     = _cfg.pin_sda;
             cfg.i2c_addr    = _cfg.i2c_adress;

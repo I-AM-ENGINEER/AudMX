@@ -248,7 +248,7 @@ void readTask( void *args ){
         }
 
         // Send every second
-        if((esp_timer_get_time() - timestamp) >= 1000000LL){
+        if((esp_timer_get_time() - timestamp) >= 3000000LL){
             timestamp = esp_timer_get_time();
             need_positions_send = true;
         }
@@ -262,7 +262,7 @@ void readTask( void *args ){
             }
             std::cout << std::endl;
         }
-        delay(1);
+        delay(20);
     }
 }
 
