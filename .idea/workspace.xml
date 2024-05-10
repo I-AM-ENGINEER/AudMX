@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f972b14a-36ba-4ce9-8a50-334742054eee" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/windows app/icon/__0001__vlc.bmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows app/icon/__1000__chrome.bmp" beforeDir="false" afterPath="$PROJECT_DIR$/windows app/icon/__1000__chrome.bmp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows app/icon/__1500__Halo — копия (2).bmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows app/icon/__2000__Halo — копия (4).bmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows app/icon/__4000__Halo — копия (3).bmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows app/icon/__8000__Halo — копия.bmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows app/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/windows app/main.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2gEIMkHsyyNZGRTkhwByz2z2mib" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Users/savva/Documents/github/AudMix/windows app",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f972b14a-36ba-4ce9-8a50-334742054eee" name="Changes" comment="" />
+      <created>1715256263412</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1715256263412</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

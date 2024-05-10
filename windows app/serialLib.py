@@ -96,7 +96,8 @@ class seriall(QObject):
             return
         else:
             self.flag_do_read = 0
-        print("ser read: ", self.inputSrt[:-1])
+        self.inputSrt = self.inputSrt[:self.inputSrt.find("\n")]
+        print("ser read: ", self.inputSrt[:self.inputSrt.find("\n")])
 
         # temp = inputSrt[0:self.inputSrt.find("\n")]
         # inputSrt = temp
@@ -122,10 +123,10 @@ class seriall(QObject):
         :return: None
         """
         self.flag_read_data = True
-        # print("ser write:", iner)
+        print("ser write:", iner)
         self.serial.write(str(iner).encode())
 
     def writeByteSerial(self, iner):
         self.flag_read_data = True
-        # print("ser write Byte: ", iner)
+        print("ser write Byte: ", iner)
         self.serial.write(bytes(iner))
