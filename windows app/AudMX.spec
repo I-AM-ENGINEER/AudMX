@@ -5,7 +5,7 @@ a = Analysis(
     ['AudMX.py'],
     pathex=[],
     binaries=[],
-    datas=[('B_sylete', '.'), ('W_sylete', '.')],
+    datas=[('B_sylete', '.'), ('W_sylete', '.'), ('icon.png', '.')],
     hiddenimports=['pycaw', 'Pillow', 'ctype', 'pywin32', 'PySide6'],
     hookspath=[],
     hooksconfig={},
