@@ -122,10 +122,10 @@ class seriall(QObject):
         :return: None
         """
         self.flag_read_data = True
-        print("ser write:", iner)
+        # print("ser write:", iner)
         self.serial.write(str(iner).encode())
 
     def writeByteSerial(self, iner):
         self.flag_read_data = True
-        print("ser write Byte: ", iner)
+        # print("ser write Byte: ", iner)
         self.serial.write(bytes(iner))
