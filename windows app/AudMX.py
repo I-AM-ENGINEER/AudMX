@@ -235,6 +235,7 @@ class MainClass(QtWidgets.QWidget):
         self.ser.SignalReadVoluem.connect(lambda comand: self.levelVolHandle(comand))
         self.ser.SignalSetIcon.connect(lambda ans: self.loadIconOnESP(ans))
         self.ser.SignalError.connect(lambda ans: self.handleSerError(ans))
+        self.ser.SignalGetIcon.connect(self.handleGetIcon)
 
         self.timer_ser_con = QTimer()
         self.timer_ser_con.timeout.connect(self.ser.startSerialAutoConnect)
@@ -266,6 +267,7 @@ class MainClass(QtWidgets.QWidget):
         cssStyle, themeBW = setStyle_Black_Or_White.getStyleBW()
         if theme != themeBW:
             self.setStyleSheet(cssStyle)
+
         if (self.ser_work == 1):
             self.upDateListOpenProcces()
             if (self.last_process_list != self.open_process_list):
@@ -400,17 +402,20 @@ class MainClass(QtWidgets.QWidget):
         """
         self.ser_work = 1
         self.timer_ser_con.stop()
+        self.last_process_list = []
         self.updateStyleUI()
         # self.loadIconOnESP()
 
     def loadIconOnESP(self, ans=0):
+        self.num_load_icon = self.num_load_icon + ans
         if (self.num_load_icon == 5):
             self.num_load_icon = 0
             return
         self.ser.writeSerial("SET_ICON " + str(self.mas_icon[self.num_load_icon][1]) + "\n")
         self.timer_test.start()
 
-
+    def handleGetIcon(self):
+        self.timer_test.start()
     def loadByteMasToESP(self):
         self.teat_perer += 1
         #/print(len(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64]) , self.teat_perer, self.num_load_icon)

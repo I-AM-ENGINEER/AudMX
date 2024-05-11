@@ -26,6 +26,7 @@ class seriall(QObject):
     SignalReadButton = Signal(str)
     SignalReadVoluem = Signal(str)
     SignalSetIcon = Signal(int)
+    SignalGetIcon = Signal()
     flag_do_read = 0
     inputSrt = ""
 
@@ -41,6 +42,7 @@ class seriall(QObject):
         self.mas_ser = []
         self.mas_iner = []
         self.flag_read_data = False
+        self.serial.readyRead.connect(self.readInpurAndOutput)
     def handle_error(self, error):
         if error == QSerialPort.NoError:
             return
@@ -80,7 +82,7 @@ class seriall(QObject):
         self.serial.setBaudRate(BaudRate)
         self.serial.setPortName(currertPort)
         self.serial.open(QIODevice.ReadWrite)
-        self.serial.readyRead.connect(self.readInpurAndOutput)
+
         self.SignalSerialStartOk.emit()
 
 
@@ -119,8 +121,10 @@ class seriall(QObject):
                 self.SignalReadVoluem.emit(self.inputSrt)
         elif self.inputSrt.find("OK") != -1:
             self.SignalSetIcon.emit(0)
-        # elif self.inputSrt.find("ERROR: -1") != -1:
-        #     self.SignalSetIcon.emit(-1)
+        elif self.inputSrt.find("ERROR: -1") != -1:
+            self.SignalSetIcon.emit(-1)
+        elif self.inputSrt.find("Send 352 bytes") != -1:
+            self.SignalGetIcon.emit()
 
     def closeSerial(self):                 #закрываем serial и стираем все состояния кнопок в приложении
         self.serial.close()
