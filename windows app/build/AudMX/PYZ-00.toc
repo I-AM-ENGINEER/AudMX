@@ -384,6 +384,10 @@
   ('asyncio.windows_utils',
    'C:\\Users\\savva\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\windows_utils.py',
    'PYMODULE'),
+  ('avto_run_settings',
+   'C:\\Users\\savva\\Documents\\github\\AudMix\\windows '
+   'app\\avto_run_settings.py',
+   'PYMODULE'),
   ('base64',
    'C:\\Users\\savva\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\base64.py',
    'PYMODULE'),

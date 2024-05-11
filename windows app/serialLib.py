@@ -19,7 +19,7 @@ class seriall(QObject):
     SignalReadPort = Signal(list)
     SignalSerialRegOk = Signal()
     SignalSerialStartOk = Signal()
-    SignalError = Signal()
+    SignalError = Signal(str)
     SignalInvalidComand = Signal()
     SignalReadFinish = Signal(list)
     SignalReadLine = Signal(str)
@@ -35,10 +35,19 @@ class seriall(QObject):
         self.vendorIdentifier = vendorIdentifier_
         self.productIdentifier = productIdentifier_
         self.serial = QSerialPort()
+        self.serial.errorOccurred.connect(self.handle_error)
+
         # self.circular_array = CircularArray.CircularArray(400)
         self.mas_ser = []
         self.mas_iner = []
         self.flag_read_data = False
+    def handle_error(self, error):
+        if error == QSerialPort.NoError:
+            return
+        if error == QSerialPort.ResourceError:
+            self.SignalError.emit('disconnected')
+            print("Serial port disconnected!")
+
 
     def readPort(self):
         """

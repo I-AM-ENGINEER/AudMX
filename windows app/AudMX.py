@@ -14,20 +14,28 @@ from PySide6.QtGui import QIcon
 from serialLib import seriall
 import setStyle_Black_Or_White
 from comtypes import CLSCTX_ALL
+from avto_run_settings import *
 
 
 theme = int
 class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс приложения в трее
     flag_warning = True
+    flag_auto_boot = 0
     SignalLIght1 = Signal()
     SignalLIght2 = Signal()
     SignalLIght3 = Signal()
-    def __init__(self, icon, parent=None):
+    def __init__(self, icon, auto_boot_flag=0, parent=None):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
+        self.flag_auto_boot = auto_boot_flag
 
         self.menu = QtWidgets.QMenu(parent)
 
         self.menu_light = self.menu.addMenu("light")
+        if (self.flag_auto_boot == 0):
+            self.avto_boot_action = self.menu.addAction("ON auto boot")
+            # self.avto_boot_action.setText("ON auto boot")
+        else:
+            self.avto_boot_action = self.menu.addAction("OFF auto boot")
         self.Action1 = self.menu.addAction("off warning")
         self.Action2 = self.menu.addAction("Action2")
         self.exitAction = self.menu.addAction("EXIT")
@@ -40,6 +48,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс прил�
         self.Action_light1.triggered.connect(self.action_light1)
         self.Action_light2.triggered.connect(self.action_light2)
         self.Action_light2.triggered.connect(self.action_light3)
+        self.avto_boot_action.triggered.connect(self.avtoBootAction)
         self.exitAction.triggered.connect(self.exit)
         self.Action1.triggered.connect(self.action1)
         self.Action2.triggered.connect(self.action2)
@@ -50,7 +59,16 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс прил�
 
     def exit(self):
         QtCore.QCoreApplication.exit()
+    def avtoBootAction(self):
+        self.flag_auto_boot = not self.flag_auto_boot
+        if (self.flag_auto_boot == 0):
+            self.avto_boot_action.setText("ON auto boot")
+            removeAppToAvtoRun("AudMX")
+        else:
+            self.avto_boot_action.setText("OFF auto boot")
+            addAppToAvtoRun("AudMX", sys.argv[0])
 
+        
     def action1(self):
         if self.flag_warning:
             self.Action1.setText("on warning")
@@ -83,6 +101,7 @@ class MainClass(QtWidgets.QWidget):
     open_process_list = []
     ser_work = 0
     mas_icon = []
+    avto_run_flag = 0
     dictVolumeDBtoProsent = [-65.25,
                              -64.49741,
                              -58.173828125,
@@ -186,11 +205,10 @@ class MainClass(QtWidgets.QWidget):
     def __init__(self):
         super(MainClass, self).__init__()
 
-        self.timer = QTimer()
-        self.timer.setInterval(2500)
+        self.avto_run_flag = readAppToAvtoRun("AudMX")
 
         icon = QIcon("icon.png")
-        self.trayIcon = SystemTrayIcon(icon, self)
+        self.trayIcon = SystemTrayIcon(icon,self.avto_run_flag, self)
         self.trayIcon.show()
         pid, vid = self.readINIfile()
 
@@ -201,9 +219,6 @@ class MainClass(QtWidgets.QWidget):
         self.updateStyleUI()
         self.upDateListOpenProcces()
         self.upDateListMasIcon()
-        # self.process_folder(".\\icon")
-        # for image_byte in range(self.process_folder(".\\icon")):
-        #     pass
 
         self.timer_test = QTimer()
         self.timer_test.timeout.connect(self.loadByteMasToESP)
@@ -219,11 +234,20 @@ class MainClass(QtWidgets.QWidget):
         self.ser.SignalReadButton.connect(lambda comand: self.keyPleerHandle(comand))
         self.ser.SignalReadVoluem.connect(lambda comand: self.levelVolHandle(comand))
         self.ser.SignalSetIcon.connect(lambda ans: self.loadIconOnESP(ans))
+        self.ser.SignalError.connect(lambda ans: self.handleSerError(ans))
+
         self.timer_ser_con = QTimer()
         self.timer_ser_con.timeout.connect(self.ser.startSerialAutoConnect)
         self.timer_ser_con.setInterval(1500)
         self.timer_ser_con.start()
 
+
+
+    def handleSerError(self, ans: str):
+        if (ans == 'disconnected'):
+            self.ser.closeSerial()
+            self.timer_ser_con.start()
+            self.ser_work = 0
 
     def upDateListOpenProcces(self):
         self.open_process_list = [session.Process.name() for session in AudioUtilities.GetAllSessions() if session.Process] + ["master.exe", "system.exe"]
@@ -242,10 +266,9 @@ class MainClass(QtWidgets.QWidget):
         cssStyle, themeBW = setStyle_Black_Or_White.getStyleBW()
         if theme != themeBW:
             self.setStyleSheet(cssStyle)
-
-        self.upDateListOpenProcces()
-        if (self.last_process_list != self.open_process_list):
-            if (self.ser_work == 1):
+        if (self.ser_work == 1):
+            self.upDateListOpenProcces()
+            if (self.last_process_list != self.open_process_list):
                 self.volLevelApp = []
                 self.last_process_list = self.open_process_list
                 self.upDateListMasIcon()
@@ -377,9 +400,10 @@ class MainClass(QtWidgets.QWidget):
         """
         self.ser_work = 1
         self.timer_ser_con.stop()
-        self.loadIconOnESP()
+        self.updateStyleUI()
+        # self.loadIconOnESP()
 
-    def loadIconOnESP(self, ans = 0):
+    def loadIconOnESP(self, ans=0):
         if (self.num_load_icon == 5):
             self.num_load_icon = 0
             return
@@ -395,9 +419,23 @@ class MainClass(QtWidgets.QWidget):
             self.timer_test.stop()
             self.teat_perer = 0
             self.num_load_icon += 1
+    # def closeEvent(self, event):
+
+        # if self.avto_run_flag():
+        #     addAppToAvtoRun("AudMX", sys.argv[0])
+        # else:
+        #     removeAppToAvtoRun("AudMX")
+        # event.accept()
+def run_only_one_instance(app):
+    # Проверяем, запущено ли уже приложение
+    running_process_count = sum(1 for p in app.allWindows() if p.objectName() == "AudMX")
+
+    if running_process_count > 1:
+        sys.exit(0)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    run_only_one_instance(app)
     app.setQuitOnLastWindowClosed(False)
-    window = MainClass()  # создаем мейн окно
+    window = MainClass()
     sys.exit(app.exec())
