@@ -318,7 +318,7 @@ class MainClass(QtWidgets.QWidget):
 
                     volume.SetMasterVolume(float(volume_level)/1024, None)
                     self.volLevelApp[num_app][1] = True
-                    break
+                    # break
                 elif (self.volLevelApp[num_app][0] == "system" and str(session)[-5] == 'DisplayName: @%SystemRoot%\System32\AudioSrv.Dll'):
                     volume = session._ctl.QueryInterface(ISimpleAudioVolume)
                     volume.SetMasterVolume(float(volume_level) / 1024, None)
