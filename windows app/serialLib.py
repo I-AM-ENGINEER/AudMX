@@ -1,21 +1,8 @@
 # import time
 from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
-from PySide6.QtCore import QIODevice, Signal, QObject
-
-# PC->ESP
-# SET_ICON:posision:icon     -> num=(int[0:4]) icon=(bite arrey)
-# SET_LIGHT:name_mode     -> name_mode=(str(white/wave/level_value))
-
-# PC<-ESP
-# SET_VALUE:num:value   -> num=(int[0:4]) value=(int [0:100])
-# SET_BUTTON:str   -> str=(prev/next/play)
-# vid 12346 pid 4097
+from PySide6.QtCore import QIODevice, Signal, QObject, QTimer
 
 class seriall(QObject):
-    productIdentifier = 0
-    vendorIdentifier = 0
-    BaudRate = 0
-    comand_Buff = ""
     SignalReadPort = Signal(list)
     SignalSerialRegOk = Signal()
     SignalSerialStartOk = Signal()
@@ -27,28 +14,45 @@ class seriall(QObject):
     SignalReadVoluem = Signal(str)
     SignalSetIcon = Signal(int)
     SignalGetIcon = Signal()
-    flag_do_read = 0
-    inputSrt = ""
+    __productIdentifier = 0
+    __vendorIdentifier = 0
+    __BaudRate = 0
+    __comand_Buff = ""
+    __flag_do_read = 0
+    __inputSrt = ""
+    __flag_reconnect = False
+    __ser_work = False
 
-    def __init__(self, vendorIdentifier_ = 0, productIdentifier_ = 0, BaudRate_ = 0):
+    def __init__(self):
         super().__init__()
-        self.BaudRate = BaudRate_
-        self.vendorIdentifier = vendorIdentifier_
-        self.productIdentifier = productIdentifier_
-        self.serial = QSerialPort()
-        self.serial.errorOccurred.connect(self.handle_error)
 
-        # self.circular_array = CircularArray.CircularArray(400)
-        self.mas_ser = []
-        self.mas_iner = []
-        self.flag_read_data = False
-        self.serial.readyRead.connect(self.readInpurAndOutput)
-    def handle_error(self, error):
+        self.__serial = QSerialPort()
+        self.__serial.errorOccurred.connect(self.__handleError)
+        self.__flag_read_data = False
+        self.__serial.readyRead.connect(self.readInpurAndOutput)
+    @property
+    def doesSerWork(self):
+        return self.__ser_work
+
+    def autoConnect(self,  vendorIdentifier: int, productIdentifier: int, baudRate: int, reconnect = False):
+        self.__BaudRate = baudRate
+        self.__vendorIdentifier = vendorIdentifier
+        self.__productIdentifier = productIdentifier
+        self.__timer_avto_connect = QTimer()
+        self.__timer_avto_connect.timeout.connect(self.__startSerialAutoConnect)
+        self.__timer_avto_connect.setInterval(1500)
+        self.__timer_avto_connect.start()
+        self.__flag_reconnect = reconnect
+    def __handleError(self, error):
         if error == QSerialPort.NoError:
             return
         if error == QSerialPort.ResourceError:
             self.SignalError.emit('disconnected')
             print("Serial port disconnected!")
+            self.closeSerial()
+            __ser_work = False
+            if (self.__flag_reconnect == True):
+                self.__timer_avto_connect.start()
 
 
     def readPort(self):
@@ -61,7 +65,7 @@ class seriall(QObject):
         self.SignalReadPort.emit(ports_name)
         return ports
 
-    def startSerialAutoConnect(self):
+    def __startSerialAutoConnect(self):
         """
         #авто запуск сериал порта
         берет список всех пртов и если находить устройство с правильным PID/VID запускает подключение
@@ -69,21 +73,24 @@ class seriall(QObject):
         """
         portList = self.readPort()
         for port in portList:
-            if port.productIdentifier() == self.productIdentifier and port.vendorIdentifier() == self.vendorIdentifier:
-                self.openSerialAndStartMessage(port.portName(), self.BaudRate)
+            if port.productIdentifier() == self.__productIdentifier and port.vendorIdentifier() == self.__vendorIdentifier:
+                self.openSerialAndStartMessage(port.portName(), self.__BaudRate)
 
-    def openSerialAndStartMessage(self, currertPort: str, BaudRate: int):                   #начинаем общение с сериалом
+    def openSerialAndStartMessage(self, currertPort: str, BaudRate: int):
         """
         #инициализирует сериал порт и подключает обработчик входящих команд
         по завершению вызывает сигнал SignalSerialStartOk
         :return: None
         """
         print(currertPort, BaudRate)
-        self.serial.setBaudRate(BaudRate)
-        self.serial.setPortName(currertPort)
-        self.serial.open(QIODevice.ReadWrite)
+        self.__serial.setBaudRate(BaudRate)
+        self.__serial.setPortName(currertPort)
+        self.__serial.open(QIODevice.ReadWrite)
+        self.__timer_avto_connect.stop()
+        self.__ser_work = True
 
         self.SignalSerialStartOk.emit()
+
 
 
     def readInpurAndOutput(self):
@@ -93,41 +100,41 @@ class seriall(QObject):
         :return: None
         """
         # inputSrt = self.serial.readLine()
-        inputSrtB = self.serial.readAll()
+        inputSrtB = self.__serial.readAll()
 
 
-        if (self.flag_do_read == 1):
-            self.inputSrt += str(inputSrtB, 'utf-8')
+        if (self.__flag_do_read == 1):
+            self.__inputSrt += str(inputSrtB, 'utf-8')
         else:
-            self.inputSrt = str(inputSrtB, 'utf-8')
+            self.__inputSrt = str(inputSrtB, 'utf-8')
 
-        if (self.inputSrt.find("\n") == -1):
-            print("------------------------", len(self.inputSrt), self.inputSrt.find("\n"))
-            self.flag_do_read = 1
+        if (self.__inputSrt.find("\n") == -1):
+            print("------------------------", len(self.__inputSrt), self.__inputSrt.find("\n"))
+            self.__flag_do_read = 1
             return
         else:
-            self.flag_do_read = 0
-        self.inputSrt = self.inputSrt[:self.inputSrt.find("\n")]
-        print("ser read: ", self.inputSrt[:self.inputSrt.find("\n")])
+            self.__flag_do_read = 0
+        self.__inputSrt = self.__inputSrt[:self.__inputSrt.find("\n")]
+        print("ser read: ", self.__inputSrt[:self.__inputSrt.find("\n")])
 
-        # temp = inputSrt[0:self.inputSrt.find("\n")]
+        # temp = inputSrt[0:self.__inputSrt.find("\n")]
         # inputSrt = temp
 
-        if self.inputSrt.find("SET_BUTTON:") != -1:
-            self.SignalReadButton.emit(self.inputSrt[12])
-        elif self.inputSrt.find("|") != -1:
-            if (self.inputSrt != self.comand_Buff):
-                self.comand_Buff = self.inputSrt
-                self.SignalReadVoluem.emit(self.inputSrt)
-        elif self.inputSrt.find("OK") != -1:
+        if self.__inputSrt.find("SET_BUTTON:") != -1:
+            self.SignalReadButton.emit(self.__inputSrt[12])
+        elif self.__inputSrt.find("|") != -1:
+            if (self.__inputSrt != self.__comand_Buff):
+                self.__comand_Buff = self.__inputSrt
+                self.SignalReadVoluem.emit(self.__inputSrt)
+        elif self.__inputSrt.find("OK") != -1:
             self.SignalSetIcon.emit(0)
-        elif self.inputSrt.find("ERROR: -1") != -1:
+        elif self.__inputSrt.find("ERROR: -1") != -1:
             self.SignalSetIcon.emit(-1)
-        elif self.inputSrt.find("Send 352 bytes") != -1:
+        elif self.__inputSrt.find("Send 352 bytes") != -1:
             self.SignalGetIcon.emit()
 
-    def closeSerial(self):                 #закрываем serial и стираем все состояния кнопок в приложении
-        self.serial.close()
+    def closeSerial(self):
+        self.__serial.close()
 
     def writeSerial(self, iner: str):
         """
@@ -135,11 +142,11 @@ class seriall(QObject):
         :param iner: команда для отправки в сериал порт
         :return: None
         """
-        self.flag_read_data = True
+        self.__flag_read_data = True
         print("ser write:", iner)
-        self.serial.write(str(iner).encode())
+        self.__serial.write(str(iner).encode())
 
     def writeByteSerial(self, iner):
-        self.flag_read_data = True
+        self.__flag_read_data = True
         print("ser write Byte: ", iner)
-        self.serial.write(bytes(iner))
+        self.__serial.write(bytes(iner))

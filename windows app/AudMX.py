@@ -14,24 +14,24 @@ from PySide6.QtGui import QIcon
 from serialLib import seriall
 import setStyle_Black_Or_White
 from comtypes import CLSCTX_ALL
-from avto_run_settings import *
+from avto_run_settings import AvtoRun
 
 
 theme = int
 class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс приложения в трее
     flag_warning = True
-    flag_auto_boot = 0
+    __flag_auto_boot = 0
     SignalLIght1 = Signal()
     SignalLIght2 = Signal()
     SignalLIght3 = Signal()
     def __init__(self, icon, auto_boot_flag=0, parent=None):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
-        self.flag_auto_boot = auto_boot_flag
+        self.__flag_auto_boot = auto_boot_flag
 
         self.menu = QtWidgets.QMenu(parent)
 
         self.menu_light = self.menu.addMenu("light")
-        if (self.flag_auto_boot == 0):
+        if (self.__flag_auto_boot == 0):
             self.avto_boot_action = self.menu.addAction("ON auto boot")
             # self.avto_boot_action.setText("ON auto boot")
         else:
@@ -60,13 +60,13 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс прил�
     def exit(self):
         QtCore.QCoreApplication.exit()
     def avtoBootAction(self):
-        self.flag_auto_boot = not self.flag_auto_boot
-        if (self.flag_auto_boot == 0):
+        self.__flag_auto_boot = not self.__flag_auto_boot
+        if (self.__flag_auto_boot == 0):
             self.avto_boot_action.setText("ON auto boot")
-            removeAppToAvtoRun("AudMX")
+            AvtoRun.removeAppToAvtoRun("AudMX")
         else:
             self.avto_boot_action.setText("OFF auto boot")
-            addAppToAvtoRun("AudMX", sys.argv[0])
+            AvtoRun.addAppToAvtoRun("AudMX", sys.argv[0])
 
         
     def action1(self):
@@ -99,7 +99,7 @@ class MainClass(QtWidgets.QWidget):
     num_load_icon = 0
     teat_perer = 0
     open_process_list = []
-    ser_work = 0
+    # ser_work = 0
     mas_icon = []
     avto_run_flag = 0
     dictVolumeDBtoProsent = [-65.25,
@@ -205,12 +205,13 @@ class MainClass(QtWidgets.QWidget):
     def __init__(self):
         super(MainClass, self).__init__()
 
-        self.avto_run_flag = readAppToAvtoRun("AudMX")
+        self.avto_run_flag = AvtoRun.readAppToAvtoRun("AudMX")
 
-        icon = QIcon("icon.png")
+        icon = QIcon(sys.argv[0][:sys.argv[0].rindex("\\")] + "\\icon.png")
         self.trayIcon = SystemTrayIcon(icon,self.avto_run_flag, self)
         self.trayIcon.show()
         pid, vid = self.readINIfile()
+        self.ser = seriall()
 
         self.timer_2 = QTimer()
         self.timer_2.timeout.connect(self.updateStyleUI)
@@ -220,35 +221,35 @@ class MainClass(QtWidgets.QWidget):
         self.upDateListOpenProcces()
         self.upDateListMasIcon()
 
-        self.timer_test = QTimer()
-        self.timer_test.timeout.connect(self.loadByteMasToESP)
-        self.timer_test.setInterval(10)
+        self.timer_loadByte = QTimer()
+        self.timer_loadByte.timeout.connect(self.loadByteMasToESP)
+        self.timer_loadByte.setInterval(10)
 
         self.trayIcon.SignalLIght1.connect(self.handleSignalLIght1)
         self.trayIcon.SignalLIght2.connect(self.handleSignalLIght2)
         self.trayIcon.SignalLIght3.connect(self.handleSignalLIght3)
 
-        self.ser = seriall(vid, pid, 1000000)
+
 
         self.ser.SignalSerialStartOk.connect(self.startMassege)
         self.ser.SignalReadButton.connect(lambda comand: self.keyPleerHandle(comand))
         self.ser.SignalReadVoluem.connect(lambda comand: self.levelVolHandle(comand))
         self.ser.SignalSetIcon.connect(lambda ans: self.loadIconOnESP(ans))
-        self.ser.SignalError.connect(lambda ans: self.handleSerError(ans))
+        # self.ser.SignalError.connect(lambda ans: self.handleSerError(ans))
         self.ser.SignalGetIcon.connect(self.handleGetIcon)
+        self.ser.autoConnect(vid, pid, 1000000, True)
+        # self.timer_ser_con = QTimer()
+        # self.timer_ser_con.timeout.connect(self.ser.startSerialAutoConnect)
+        # self.timer_ser_con.setInterval(1500)
+        # self.timer_ser_con.start()
 
-        self.timer_ser_con = QTimer()
-        self.timer_ser_con.timeout.connect(self.ser.startSerialAutoConnect)
-        self.timer_ser_con.setInterval(1500)
-        self.timer_ser_con.start()
 
 
-
-    def handleSerError(self, ans: str):
-        if (ans == 'disconnected'):
-            self.ser.closeSerial()
-            self.timer_ser_con.start()
-            self.ser_work = 0
+    # def handleSerError(self, ans: str):
+    #     if (ans == 'disconnected'):
+            # self.ser.closeSerial()
+            # self.timer_ser_con.start()
+            # self.ser_work = 0
 
     def upDateListOpenProcces(self):
         self.open_process_list = [session.Process.name() for session in AudioUtilities.GetAllSessions() if session.Process] + ["master.exe", "system.exe"]
@@ -256,7 +257,7 @@ class MainClass(QtWidgets.QWidget):
         self.mas_icon = [[icon, num] for num, icon in enumerate(self.process_folder(".\\icon"))]
 
         while (len(self.mas_icon) < 6):
-            self.mas_icon.append([bytes([0]) * 352 ,len(self.mas_icon)])
+            self.mas_icon.append([bytes([0]) * 352, len(self.mas_icon)])
 
     def updateStyleUI(self):
         """
@@ -268,7 +269,7 @@ class MainClass(QtWidgets.QWidget):
         if theme != themeBW:
             self.setStyleSheet(cssStyle)
 
-        if (self.ser_work == 1):
+        if (self.ser.doesSerWork == 1):
             self.upDateListOpenProcces()
             if (self.last_process_list != self.open_process_list):
                 self.volLevelApp = []
@@ -282,7 +283,7 @@ class MainClass(QtWidgets.QWidget):
         #читает ини файл с некоторыми наситройками
         :return: None
         """
-        with open('ini.txt') as f:
+        with open(sys.argv[0][:sys.argv[0].rindex("\\")] + '\\ini.txt') as f:
             lines = f.readlines()
         if len(lines) > 1:
             if lines[0].find("PID=") != -1 and lines[1].find("VID=") != -1:
@@ -400,10 +401,10 @@ class MainClass(QtWidgets.QWidget):
         #вызываеться послесигнала о подключении и запускает перврначальную настройку(записывает картинки в микщер)
         :return:
         """
-        self.ser_work = 1
-        self.timer_ser_con.stop()
+        # self.ser_work = 1
+        # self.timer_ser_con.stop()
         self.last_process_list = []
-        self.updateStyleUI()
+        # self.updateStyleUI()
         # self.loadIconOnESP()
 
     def loadIconOnESP(self, ans=0):
@@ -412,16 +413,16 @@ class MainClass(QtWidgets.QWidget):
             self.num_load_icon = 0
             return
         self.ser.writeSerial("SET_ICON " + str(self.mas_icon[self.num_load_icon][1]) + "\n")
-        self.timer_test.start()
+        self.timer_loadByte.start()
 
     def handleGetIcon(self):
-        self.timer_test.start()
+        self.timer_loadByte.start()
     def loadByteMasToESP(self):
         self.teat_perer += 1
         #/print(len(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64]) , self.teat_perer, self.num_load_icon)
         self.ser.writeByteSerial(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64])
         if (self.teat_perer == 6):
-            self.timer_test.stop()
+            self.timer_loadByte.stop()
             self.teat_perer = 0
             self.num_load_icon += 1
     # def closeEvent(self, event):
