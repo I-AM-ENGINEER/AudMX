@@ -50,6 +50,7 @@ void Device::clalibrate( void ){
 
     LGFX_SSD1306 *display = &sliders[0].display;
     
+    // Minimum slider position capture
     display->setTextSize(1.0f);
     display->drawString("Calibration", 0, 0);
     display->drawString("Set slider", 0, 10);
@@ -62,7 +63,6 @@ void Device::clalibrate( void ){
         delay(1000);
     }
 
-    // Minimum slider position capture
     display->clear(TFT_BLACK);
     display->drawString("Sampling...", 0, 0);
 
@@ -75,6 +75,7 @@ void Device::clalibrate( void ){
     }
     delay(2000);
 
+    // Maximum slider position capture
     display->drawString("Calibration", 0, 0);
     display->drawString("Set slider", 0, 10);
     display->drawString("to MAXIMUM", 0, 20);
@@ -86,7 +87,6 @@ void Device::clalibrate( void ){
         delay(1000);
     }
 
-    // Maximum slider position capture
     {
         display->clear(TFT_BLACK);
         display->drawString("Sampling...", 0, 0);
@@ -107,6 +107,7 @@ void Device::clalibrate( void ){
 
     delay(2000);
 
+    // Middle slider position capture
     display->drawString("Calibration", 0, 0);
     display->drawString("Set slider", 0, 10);
     display->drawString("to MIDLE", 0, 20);
@@ -117,9 +118,6 @@ void Device::clalibrate( void ){
         sliders[0].display.drawString(msg, 0, 40);
         delay(1000);
     }  
-
-    
-    // Middle slider position capture
 
     {
         display->clear(TFT_BLACK);
@@ -164,9 +162,24 @@ void Device::clalibrate( void ){
     delay(3000);
 }
 
+void Device::nvsInit( void ){
+    esp_err_t err = nvs_flash_init();
+    if ((err == ESP_ERR_NVS_NO_FREE_PAGES) || (err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {
+        ESP_LOGW("NVS", "Erasing NVS partition...");
+        nvs_flash_erase();
+        err = nvs_flash_init();
+    };
+    if (err == ESP_OK) {
+        ESP_LOGI("NVS", "NVS partition initilized");
+    } else {
+        ESP_LOGE("NVS", "NVS partition initialization error: %d (%s)", err, esp_err_to_name(err));
+    };
+}
+
 void Device::init( void ){
-    ws2812b_display_buffer = _ws2812_buffer_a;
+    ws2812b_display_buffer = _ws2812_buffer;
     configure();
+    nvsInit();
     consoleInit();
     adcInit();
 
@@ -184,15 +197,12 @@ void Device::init( void ){
         delay(1);
     }
     virtDispInit(); // This must be here for normal real displays work
-
-
     
     // If both buttons pressed on start, run calibration
     if(((sliders[0].adcRawRead() > 0.99) && (sliders[1].adcRawRead() > 0.99))){
         clalibrate();
     }
 
-    
     nvs_handle_t nvs_handle;
     esp_err_t err = nvs_open("CAL", NVS_READONLY, &nvs_handle); 
     

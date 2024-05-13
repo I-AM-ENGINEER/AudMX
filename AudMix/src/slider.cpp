@@ -46,17 +46,6 @@ void Slider::updatePosition( void ){
 }
 
 void Slider::updateDisplay( void ){
-    /*
-    display.setTextSize(1.0f);
-    char msg[11];
-
-    if(readButton()){
-        display.drawString("Button!", 0, 20);
-    }else{
-        snprintf(msg, sizeof(msg), "%.0f    ", readPosition() * 100.0f);
-        display.drawString("       ", 0, 20);
-        display.drawString(msg, 0, 0);
-    }*/
     // Every 120s change position for slowdown degradation
     int32_t t = (int32_t)(esp_timer_get_time() / 1000 / 1000 / 120);
     int32_t pos_x = (t % 2) * 4;
