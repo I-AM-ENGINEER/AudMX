@@ -3,6 +3,10 @@
 extern CRGB *ws2812b_display_buffer;
 
 void Device::configure( void ){
+    // Long press button 0 and 1 during boot for start calibration
+    _buttons_pressed_for_calibration[0] = true;
+    _buttons_pressed_for_calibration[1] = true;
+
     // Slider 1 config
     {
         auto cfg = sliders[0].config();
@@ -14,6 +18,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
+        cfg.button_number   = -1; // -1 - system button, no send buttons events to PC, > 0 - sending if pressed
         sliders[0].config(cfg);
     }
 
@@ -28,6 +33,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
+        cfg.button_number   = -1;
         sliders[1].config(cfg);
     }
 
@@ -42,6 +48,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
+        cfg.button_number   = 0;
         sliders[2].config(cfg);
     }
 
@@ -56,6 +63,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
+        cfg.button_number   = 1;
         sliders[3].config(cfg);
     }
 
@@ -70,6 +78,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
+        cfg.button_number   = 2;
         sliders[4].config(cfg);
     }
 }

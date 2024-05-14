@@ -61,6 +61,7 @@ class  Slider{
         uint16_t led_start                  =              0;
         uint16_t led_count                  =              0;
         bool double_leds                    =           true;
+        int8_t button_number                =             -1;
     };
     float adcRawReadAccuracy( void );
     HysteresisFilter histFilter;
@@ -89,6 +90,7 @@ public:
     float adcRawRead( void );
     float readPosition( void );
     bool readButton( void );
+    int8_t readButtonNum( void ){ return _cfg.button_number; };
 protected:
     config_t _cfg;
     calibration_t _calibration;

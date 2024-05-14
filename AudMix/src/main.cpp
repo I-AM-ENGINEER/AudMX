@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/event_groups.h"
 #include "device.hpp"
 #include "nvs_flash.h"
 #include "AudMX_logo.h"
@@ -17,6 +18,8 @@ extern "C" {
 }
 
 Device audMix;
+EventGroupHandle_t buttonsPressedEventGroup;
+EventGroupHandle_t buttonsReleasedEventGroup;
 
 extern CRGB *ws2812b_display_buffer;
 
@@ -66,7 +69,8 @@ void stripTask( void *args ){
 }
 
 void readTask( void *args ){
-    uint16_t positions_old[SLIDERS_COUNT];
+    uint16_t positions_old[SLIDERS_COUNT] = {0};
+	bool buttons_old[SLIDERS_COUNT] = {false};
     int64_t timestamp = 0;
 
     while (1){
@@ -79,14 +83,36 @@ void readTask( void *args ){
                 need_positions_send = true;
                 positions_old[i] = position_current;
             }
+
+			bool button = audMix.sliders[i].readButton();
+			int button_num = (int)audMix.sliders[i].readButtonNum();
+			if(buttons_old[i] != button){
+				if(button){
+					xEventGroupSetBits(buttonsPressedEventGroup, (1 << i));
+				}else{
+					xEventGroupSetBits(buttonsReleasedEventGroup, (1 << i));
+				}
+				buttons_old[i] = button;
+			}
+			if(button_num >= 0){
+				EventBits_t bits;
+				bits = xEventGroupClearBits(buttonsPressedEventGroup, (1 << i));
+				if(bits & (1 << i)){
+					std::cout << "BUTTON:pressed|" << button_num << std::endl;
+				}
+				bits = xEventGroupClearBits(buttonsReleasedEventGroup, (1 << i));
+				if(bits & (1 << i)){
+					std::cout << "BUTTON:released|" << button_num << std::endl;
+				}
+			}
         }
 
-        // Send every 3 second send slider position
-        if((esp_timer_get_time() - timestamp) >= 3000000LL){
+        // Send every second send slider position
+        if((esp_timer_get_time() - timestamp) >= 1000000LL){
             need_positions_send = true;
         }
 
-		// Send every 3 second send slider position
+		// Send position no faster than 100ms period
         if(((esp_timer_get_time() - timestamp) >= 100000LL) && need_positions_send){
             timestamp = esp_timer_get_time();
 			for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
@@ -175,6 +201,10 @@ void app_main() {
     esp_log_level_set("*", ESP_LOG_NONE);
 
     audMix.init();
+
+	buttonsPressedEventGroup = xEventGroupCreate();
+	buttonsReleasedEventGroup = xEventGroupCreate();
+
     xTaskCreate(consoleTask, 	"console_task", 	8000, NULL, 1500, NULL);
     xTaskCreate(stripAnimation, "strip_ani_task", 	1000, NULL, 1900, NULL);
     xTaskCreate(readTask, 		"analog_task", 		3000, NULL, 1200, NULL);

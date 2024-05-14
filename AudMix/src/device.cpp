@@ -198,8 +198,17 @@ void Device::init( void ){
     }
     virtDispInit(); // This must be here for normal real displays work
     
-    // If both buttons pressed on start, run calibration
-    if(((sliders[0].adcRawRead() > 0.99) && (sliders[1].adcRawRead() > 0.99))){
+    bool calibration = true;
+    for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
+        if(_buttons_pressed_for_calibration[i]){
+            if(sliders[i].adcRawRead() < 0.99){
+                calibration = false;
+                break;
+            }
+        }
+    }
+    
+    if(calibration){
         clalibrate();
     }
 

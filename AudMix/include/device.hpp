@@ -25,11 +25,12 @@ class Device{
     void configure( void );
     void clalibrate( void );
     
+    Battery battery;
     CRGB *_ws2812_output_buffer;
     CRGB _ws2812_buffer[STRIP_LED_COUNT];
     bool _displays_update = true;
 public:
-    Battery battery;
+    uint8_t _buttons_pressed_for_calibration[SLIDERS_COUNT];
     Slider sliders[SLIDERS_COUNT];
     void init( void );
 };
