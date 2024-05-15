@@ -17,7 +17,22 @@
 #define ICON_WIDTH          60
 #define ICON_HEIGHT         44
 
-void stripTask( void *args );
+typedef enum {
+    MENU_ITEM_TYPE_BOOL,
+    MENU_ITEM_TYPE_INT,
+} menu_item_type_t;
+
+typedef struct {
+    char name[16];
+    bool enable;
+    menu_item_type_t type;
+    union{
+        int32_t i32;
+        bool b;
+    };
+    int32_t i32_min = 0;
+    int32_t i32_max = 1;
+} menu_item_t;
 
 class Device{
     adc_oneshot_unit_handle_t _sliders_adc;
@@ -35,6 +50,8 @@ class Device{
     bool _buttons_pressed_for_calibration[SLIDERS_COUNT] = {false};
     uint8_t _button_for_stip_config = -1;
     uint8_t _button_for_bluetooth_config = -1;
+    uint8_t _button_next = -1;
+    uint8_t _button_select = -1;
 public:
     Slider sliders[SLIDERS_COUNT];
     void init( void );

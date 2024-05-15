@@ -5,6 +5,7 @@
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "driver/gpio.h"
 #include <stdio.h>
 #include "esp_ws28xx.h"
@@ -15,6 +16,14 @@
 
 CRGB *ws2812b_display_buffer;
 extern EventGroupHandle_t buttonsPressedEventGroup;
+extern EventGroupHandle_t buttonsReleasedEventGroup;
+extern SemaphoreHandle_t displaysMutex;
+
+extern menu_item_t menu_item_animation_mode;
+extern menu_item_t menu_item_brightness;
+extern menu_item_t menu_item_volume_reactive;
+extern menu_item_t menu_item_background_brightness;
+extern menu_item_t *menu_items[];
 
 void Device::adcInit( void ){
     adc_oneshot_unit_init_cfg_t init_config1 = {
@@ -49,6 +58,7 @@ void Device::clalibrate( void ){
     char msg[11];
     delay(100);
 
+    xSemaphoreTake(displaysMutex, portMAX_DELAY);
     LGFX_SSD1306 *display = &sliders[0].display;
     
     // Minimum slider position capture
@@ -160,6 +170,7 @@ void Device::clalibrate( void ){
     nvs_close(nvs_handle);
     
 
+    xSemaphoreGive(displaysMutex);
     delay(3000);
 }
 
@@ -177,20 +188,156 @@ void Device::nvsInit( void ){
     };
 }
 
+static bool isBtnPressed( uint8_t btn ){
+    EventBits_t bits;
+	bits = xEventGroupClearBits(buttonsPressedEventGroup, (1 << btn));
+    return (bits & (1 << btn));
+}
+
+static bool isBtnReleased( uint8_t btn ){
+    EventBits_t bits;
+	bits = xEventGroupClearBits(buttonsReleasedEventGroup, (1 << btn));
+    return (bits & (1 << btn));
+}
+
 void Device::update( void ){
+    const int32_t exit_time_s = 9;
+    Slider &slider = sliders[0];
+    LGFX_SSD1306 &display = sliders[0].display;
+    uint8_t start_brightness;
+    uint32_t selected_item = 0; 
 
     while (1){
-        delay(10);
         EventBits_t bits;
 		bits = xEventGroupClearBits(buttonsPressedEventGroup, (1 << _button_for_stip_config));
+        int64_t select_btn_pressed_timestamp = 0;
         if(bits & (1 << _button_for_stip_config)){
-            sliders[0].displayIcon(false);
-            sliders[0].display.clear(TFT_BLACK);//display->drawString("Calibration", 0, 0);
-            delay(1000);
-            sliders[0].displayIcon(true);
+            int64_t start_timestamp = esp_timer_get_time();
+            slider.displayIcon(false);
+            
+            display.setTextColor(TFT_WHITE, TFT_BLACK);
+            display.setTextSize(1.0f);
+            
+            xSemaphoreTake(displaysMutex, portMAX_DELAY);
+            start_brightness = display.getBrightness();
+            display.clear(TFT_BLACK);
+            xSemaphoreGive(displaysMutex);
+
+            while((esp_timer_get_time() - start_timestamp) < 10'000'000){
+                xSemaphoreTake(displaysMutex, portMAX_DELAY);
+                if(menu_item_background_brightness.enable != menu_item_volume_reactive.b){
+                    display.clear(TFT_BLACK);
+                    menu_item_background_brightness.enable = menu_item_volume_reactive.b;
+                }
+                menu_item_background_brightness.i32_max = menu_item_brightness.i32;
+                uint32_t displayed_items = 0;
+
+                display.setBrightness(200);
+                display.setCursor(0,0);
+                display.print("Strip cfg");
+
+                int32_t cursor_y = 10;
+                
+                for(uint32_t i = 0; menu_items[i] != nullptr; i++){
+                    menu_item_t &menu_item = *menu_items[i];
+
+                    if(menu_item.type == MENU_ITEM_TYPE_INT){
+                        if(menu_item.i32 > menu_item.i32_max){
+                            menu_item.i32 = menu_item.i32_min;
+                            display.setCursor(40, cursor_y);
+                            display.print("   ");
+                        }
+                    }
+                    display.setCursor(0,cursor_y);
+
+                    if(menu_item.enable){
+                        if(selected_item == i){
+                            display.setTextColor(TFT_BLACK, TFT_WHITE);
+                        }else{
+                            display.setTextColor(TFT_WHITE, TFT_BLACK);
+                        }
+
+                        display.print(menu_item.name);
+
+                        display.setTextColor(TFT_WHITE, TFT_BLACK);
+
+                        if(menu_item.type == MENU_ITEM_TYPE_INT){
+                            if((menu_item.i32 < -99) || (menu_item.i32 > 999)){
+                                display.setCursor(40,cursor_y);
+                            }else if((menu_item.i32 < -9) || (menu_item.i32 > 99)){
+                                display.setCursor(46,cursor_y);
+                            }else if((menu_item.i32 < 0) || (menu_item.i32 > 9)){
+                                display.setCursor(52,cursor_y);
+                            }else{
+                                display.setCursor(58,cursor_y);
+                            }
+                            display.print(menu_item.i32);
+                        }else{
+                            display.setCursor(58,cursor_y);
+                            if(menu_item.b){
+                                display.print("T");
+                            }else{
+                                display.print("F");
+                            }
+                        }
+                        displayed_items++;
+                        cursor_y += 8;
+                    }else if(selected_item == i){
+                        selected_item++;
+                    }
+                }
+
+                xSemaphoreGive(displaysMutex);
+                if(isBtnPressed(_button_select)){
+                    select_btn_pressed_timestamp = esp_timer_get_time();
+                }
+                if(isBtnReleased(_button_select)){
+                    select_btn_pressed_timestamp = 0;
+                }
+                if(isBtnPressed(_button_next)){
+                    start_timestamp = esp_timer_get_time();
+                    selected_item++;
+                }
+                if(displayed_items == selected_item){
+                    selected_item = 0;
+                    break;
+                }
+
+                static uint32_t btn_step = 0;
+                if(select_btn_pressed_timestamp != 0){
+                    start_timestamp = esp_timer_get_time();
+                    uint32_t select_btn_pressed_ms = (esp_timer_get_time() - select_btn_pressed_timestamp)/1000;
+                    if((select_btn_pressed_ms > 10) && ((btn_step == 0) || (btn_step == 2))){
+                        if(menu_items[selected_item]->type == MENU_ITEM_TYPE_BOOL){
+                            menu_items[selected_item]->b = !menu_items[selected_item]->b;
+                        }else if(menu_items[selected_item]->type == MENU_ITEM_TYPE_INT){
+                            menu_items[selected_item]->i32 += 1;
+                        }
+                        if(btn_step == 0){
+                            btn_step++;
+                        }else if(btn_step == 2){
+                            select_btn_pressed_timestamp = esp_timer_get_time();
+                        }
+                    }
+                    if(select_btn_pressed_ms > 1000){
+                        btn_step = 2;
+                        select_btn_pressed_timestamp = esp_timer_get_time();
+                    }
+                }else{
+                    btn_step = 0;
+                }
+                delay(20);
+            }
+            
+            
+            xSemaphoreTake(displaysMutex, portMAX_DELAY);
+            display.clear();
+            display.setBrightness(start_brightness);
+            xSemaphoreGive(displaysMutex);
+            slider.displayIcon(true);
         }
+        delay(10);
     }
-    
 }
 
 void Device::init( void ){

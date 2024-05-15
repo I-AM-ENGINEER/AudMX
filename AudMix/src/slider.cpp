@@ -53,6 +53,9 @@ void Slider::updateDisplay( void ){
     if(!displayIcon()){
         return;
     }
+
+    xSemaphoreTake(displaysMutex, portMAX_DELAY);
+
     // Every 120s change position for slowdown degradation
     int32_t t = (int32_t)(esp_timer_get_time() / 1000 / 1000 / 120);
     int32_t pos_x = (t % 2) * 4;
@@ -72,6 +75,9 @@ void Slider::updateDisplay( void ){
     }
     
     display.drawBitmap(pos_x, pos_y, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF, 0x000000);
+
+    
+    xSemaphoreGive(displaysMutex);
 }
 
 int32_t Slider::setIcon( const uint8_t *icon, uint32_t size_x, uint32_t size_y ){
@@ -92,7 +98,6 @@ void Slider::config( const config_t& cfg ) {
         cfg.i2c_adress  =     _cfg.i2c_addr;
         cfg.pin_scl     =      _cfg.pin_scl;
         cfg.pin_sda     =      _cfg.pin_sda;
-        cfg.displaysMutex = displaysMutex;
         display.config(cfg);
     }
     {

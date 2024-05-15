@@ -9,6 +9,8 @@ void Device::configure( void ){
 
     _button_for_stip_config = 0;
     _button_for_bluetooth_config = 1;
+    _button_next = 0;
+    _button_select = 1;
 
     // Slider 1 config
     {

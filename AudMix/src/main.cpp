@@ -127,7 +127,7 @@ void readTask( void *args ){
             }
             std::cout << std::endl;
         }
-        delay(1);
+        delay(10);
     }
 }
 
@@ -138,13 +138,15 @@ void displayTask( void *args ){
         audMix.sliders[i].displayIcon(true);
         audMix.sliders[i].updateDisplay();
     }
-    delay(3000);
-    for(uint32_t i = 255; i > 20; i--){
+    delay(1000);
+    xSemaphoreTake(displaysMutex, portMAX_DELAY);
+    for(uint32_t i = 255; i > 20; i-=2){
         for( auto& slider : audMix.sliders ){
             slider.display.setBrightness(i);
         }
-        delay(10);
+        delay(5);
     }
+    xSemaphoreGive(displaysMutex);
     
     while(1){
         for( auto& slider : audMix.sliders ){
