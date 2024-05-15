@@ -7,6 +7,9 @@ void Device::configure( void ){
     _buttons_pressed_for_calibration[0] = true;
     _buttons_pressed_for_calibration[1] = true;
 
+    _button_for_stip_config = 0;
+    _button_for_bluetooth_config = 1;
+
     // Slider 1 config
     {
         auto cfg = sliders[0].config();

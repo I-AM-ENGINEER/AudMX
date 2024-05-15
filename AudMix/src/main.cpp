@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "freertos/event_groups.h"
 #include "device.hpp"
 #include "nvs_flash.h"
@@ -17,9 +18,12 @@ extern "C" {
     void app_main(void);
 }
 
-Device audMix;
+
+SemaphoreHandle_t displaysMutex;
 EventGroupHandle_t buttonsPressedEventGroup;
 EventGroupHandle_t buttonsReleasedEventGroup;
+
+Device audMix;
 
 extern CRGB *ws2812b_display_buffer;
 
@@ -131,6 +135,7 @@ void displayTask( void *args ){
     for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
         audMix.sliders[i].display.setBrightness(255);
         audMix.sliders[i].setIcon(AudMX_bitmap[i], 60, 44);
+        audMix.sliders[i].displayIcon(true);
         audMix.sliders[i].updateDisplay();
     }
     delay(3000);
@@ -145,7 +150,7 @@ void displayTask( void *args ){
         for( auto& slider : audMix.sliders ){
             slider.updateDisplay();
         }
-        delay(50);
+        delay(100);
     }
 }
 
@@ -196,16 +201,22 @@ exit:
     }
 }
 
+void device_task( void *args ){
+    audMix.update();
+}
+
 void app_main() {
+    displaysMutex = xSemaphoreCreateMutex();
+	buttonsPressedEventGroup = xEventGroupCreate();
+	buttonsReleasedEventGroup = xEventGroupCreate();
     //esp_log_level_set("*", ESP_LOG_DEBUG);
     esp_log_level_set("*", ESP_LOG_NONE);
 
     audMix.init();
 
-	buttonsPressedEventGroup = xEventGroupCreate();
-	buttonsReleasedEventGroup = xEventGroupCreate();
 
     xTaskCreate(consoleTask, 	"console_task", 	8000, NULL, 1500, NULL);
+    xTaskCreate(device_task, 	"device_task", 	    3000, NULL, 3000, NULL);
     xTaskCreate(stripAnimation, "strip_ani_task", 	1000, NULL, 1900, NULL);
     xTaskCreate(readTask, 		"analog_task", 		3000, NULL, 1200, NULL);
     xTaskCreate(displayTask,	"displays_task", 	3000, NULL, 1000, NULL);

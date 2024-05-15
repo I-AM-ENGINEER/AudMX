@@ -1,5 +1,7 @@
 #pragma once
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "esp_crc.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
@@ -8,7 +10,11 @@
 #include <LovyanGFX.hpp>
 
 struct Bus_I2C_Mod : public lgfx::Bus_I2C{
+    SemaphoreHandle_t _displaysMutex = nullptr;
     void beginTransaction( void ) override{
+        if(_displaysMutex != nullptr){
+            xSemaphoreTake(_displaysMutex, portMAX_DELAY);
+        }
         i2c_set_pin(I2C_NUM_0, _cfg.pin_sda, _cfg.pin_scl, true, true, I2C_MODE_MASTER);
         lgfx::Bus_I2C::beginTransaction();
     };
@@ -16,6 +22,9 @@ struct Bus_I2C_Mod : public lgfx::Bus_I2C{
     void endTransaction( void ) override{
         lgfx::Bus_I2C::endTransaction();
         gpio_reset_pin((gpio_num_t)this->_cfg.pin_scl);
+        if(_displaysMutex != nullptr){
+            xSemaphoreGive(_displaysMutex);
+        }
     }
 };
 
@@ -24,6 +33,7 @@ class LGFX_SSD1306  : public lgfx::LGFX_Device{
     Bus_I2C_Mod                 _bus_instance;
 
     struct config_t{
+        SemaphoreHandle_t displaysMutex = nullptr;
         int16_t pin_scl         =     -1;
         int16_t pin_sda         =     -1;
         uint8_t screen_height   =     48;
@@ -44,6 +54,7 @@ public:
             cfg.pin_scl     = _cfg.pin_scl;
             cfg.pin_sda     = _cfg.pin_sda;
             cfg.i2c_addr    = _cfg.i2c_adress;
+            _bus_instance._displaysMutex = _cfg.displaysMutex;
             _bus_instance.config(cfg);
             _panel_instance.setBus(&_bus_instance);
         }

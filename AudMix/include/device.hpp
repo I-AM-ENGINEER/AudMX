@@ -1,6 +1,9 @@
 #pragma once
 
 #include "esp_adc/adc_oneshot.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "freertos/semphr.h"
 #include "esp_ws28xx.h"
 #include "slider.hpp"
 #include "system.hpp"
@@ -29,8 +32,11 @@ class Device{
     CRGB *_ws2812_output_buffer;
     CRGB _ws2812_buffer[STRIP_LED_COUNT];
     bool _displays_update = true;
+    bool _buttons_pressed_for_calibration[SLIDERS_COUNT] = {false};
+    uint8_t _button_for_stip_config = -1;
+    uint8_t _button_for_bluetooth_config = -1;
 public:
-    uint8_t _buttons_pressed_for_calibration[SLIDERS_COUNT];
     Slider sliders[SLIDERS_COUNT];
     void init( void );
+    void update( void );
 };

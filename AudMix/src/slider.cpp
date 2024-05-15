@@ -1,12 +1,16 @@
 #include "slider.hpp"
 #include "display.hpp"
 #include "system.hpp"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "esp_log.h"
 #include "esp_adc/adc_oneshot.h"
 #include "esp_timer.h"
 #include <stdio.h>
 #include <string>
 #include <algorithm>
+
+extern SemaphoreHandle_t displaysMutex;
 
 // Thanks chatgpt for this function
 static  float exponentialToLinear( float value, float middleValue ) {
@@ -46,6 +50,9 @@ void Slider::updatePosition( void ){
 }
 
 void Slider::updateDisplay( void ){
+    if(!displayIcon()){
+        return;
+    }
     // Every 120s change position for slowdown degradation
     int32_t t = (int32_t)(esp_timer_get_time() / 1000 / 1000 / 120);
     int32_t pos_x = (t % 2) * 4;
@@ -85,6 +92,7 @@ void Slider::config( const config_t& cfg ) {
         cfg.i2c_adress  =     _cfg.i2c_addr;
         cfg.pin_scl     =      _cfg.pin_scl;
         cfg.pin_sda     =      _cfg.pin_sda;
+        cfg.displaysMutex = displaysMutex;
         display.config(cfg);
     }
     {

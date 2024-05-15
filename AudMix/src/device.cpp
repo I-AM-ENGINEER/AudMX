@@ -14,6 +14,7 @@
 #define PROMPT_STR CONFIG_IDF_TARGET
 
 CRGB *ws2812b_display_buffer;
+extern EventGroupHandle_t buttonsPressedEventGroup;
 
 void Device::adcInit( void ){
     adc_oneshot_unit_init_cfg_t init_config1 = {
@@ -174,6 +175,22 @@ void Device::nvsInit( void ){
     } else {
         ESP_LOGE("NVS", "NVS partition initialization error: %d (%s)", err, esp_err_to_name(err));
     };
+}
+
+void Device::update( void ){
+
+    while (1){
+        delay(10);
+        EventBits_t bits;
+		bits = xEventGroupClearBits(buttonsPressedEventGroup, (1 << _button_for_stip_config));
+        if(bits & (1 << _button_for_stip_config)){
+            sliders[0].displayIcon(false);
+            sliders[0].display.clear(TFT_BLACK);//display->drawString("Calibration", 0, 0);
+            delay(1000);
+            sliders[0].displayIcon(true);
+        }
+    }
+    
 }
 
 void Device::init( void ){
