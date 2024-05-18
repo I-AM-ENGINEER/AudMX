@@ -15,6 +15,7 @@ from serialLib import seriall
 import setStyle_Black_Or_White
 from comtypes import CLSCTX_ALL
 from avto_run_settings import AvtoRun
+from volume_socket import SocketVolume
 
 
 theme = int
@@ -24,6 +25,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс прил�
     SignalLIght1 = Signal()
     SignalLIght2 = Signal()
     SignalLIght3 = Signal()
+
     def __init__(self, icon, auto_boot_flag=0, parent=None):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
         self.__flag_auto_boot = auto_boot_flag
@@ -33,21 +35,21 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс прил�
         self.menu_light = self.menu.addMenu("light")
         if (self.__flag_auto_boot == 0):
             self.avto_boot_action = self.menu.addAction("ON auto boot")
-            # self.avto_boot_action.setText("ON auto boot")
         else:
             self.avto_boot_action = self.menu.addAction("OFF auto boot")
         self.Action1 = self.menu.addAction("off warning")
         self.Action2 = self.menu.addAction("Action2")
         self.exitAction = self.menu.addAction("EXIT")
 
-        self.setContextMenu(self.menu)
 
         self.Action_light1 = self.menu_light.addAction("white")
         self.Action_light2 = self.menu_light.addAction("wave")
-        self.Action_light3 = self.menu_light.addAction("level_value")
+        self.Action_light3 = self.menu_light.addAction("volume_level")
+
+        self.setContextMenu(self.menu)
         self.Action_light1.triggered.connect(self.action_light1)
         self.Action_light2.triggered.connect(self.action_light2)
-        self.Action_light2.triggered.connect(self.action_light3)
+        self.Action_light3.triggered.connect(self.action_light3)
         self.avto_boot_action.triggered.connect(self.avtoBootAction)
         self.exitAction.triggered.connect(self.exit)
         self.Action1.triggered.connect(self.action1)
@@ -244,6 +246,10 @@ class MainClass(QtWidgets.QWidget):
         # self.timer_ser_con.timeout.connect(self.ser.startSerialAutoConnect)
         # self.timer_ser_con.setInterval(1500)
         # self.timer_ser_con.start()
+        self.timer_light = QTimer()
+        self.timer_light.timeout.connect(self.updateLight)
+        self.timer_light.setInterval(33)
+
 
 
 
@@ -360,9 +366,11 @@ class MainClass(QtWidgets.QWidget):
                 continue
 
             self.audioSessions = AudioUtilities.GetAllSessions()
+            self.appOpen = []
             for session in self.audioSessions:
 
                 if session.Process and session.Process.name() == self.volLevelApp[num_app][0] + ".exe":
+                    self.appOpen.append((self.volLevelApp[num_app]), )
                     volume = session._ctl.QueryInterface(ISimpleAudioVolume)
                     # #/print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
 
@@ -376,12 +384,24 @@ class MainClass(QtWidgets.QWidget):
 
 
     def handleSignalLIght1(self):
+        self.timer_light.stop()
         self.ser.writeSerial("SET_LIGHT:white")
     def handleSignalLIght2(self):
+        self.timer_light.stop()
         self.ser.writeSerial("SET_LIGHT:wave")
     def handleSignalLIght3(self):
+        self.timer_light.start()
         self.ser.writeSerial("SET_LIGHT:level_value")
+        self.volVlume = []
+        for _ in self.volLevelApp:
+            self.volVlume.appended(SocketVolume())
 
+
+    def updateLight(self):
+        com = ""
+        for app in self.appOpen:
+            com += ""
+        self.ser.writeSerial("VOL:"+ com)
     def process_folder(self, folder_path: str) -> list[bytes]:
         """
         #читает иконки из папки и прогоняет их через преобразование

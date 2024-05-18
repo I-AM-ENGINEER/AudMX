@@ -86,12 +86,13 @@ class SocketVolume():
     def killAllProcess():
         process = subprocess.Popen("taskkill /F /IM volumepid.exe", stdout=subprocess.PIPE)
         process.kill()
+# class volumeVol():
+#     def __int__(self):
 
 def dsd(str):
     print(str)
 
 if __name__ == "__main__":
     s = SocketVolume(13200)
-
     while True:
         print(s)
