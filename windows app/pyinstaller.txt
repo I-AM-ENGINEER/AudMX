@@ -1,1 +1,3 @@
  pyinstaller --hidden-import pycaw  --hidden-import Pillow  --hidden-import ctype  --hidden-import pywin32 --hidden-import PySide6 --onefile -w --add-data="B_sylete;." --add-data="W_sylete;." main.py
+
+ pyinstaller -i "C:\Users\savva\Documents\github\AudMix\icon.ico" --hidden-import pycaw  --hidden-import Pillow  --hidden-import ctype  --hidden-import pywin32 --hidden-import PySide6 --onefile -w --add-data="B_sylete;." --add-data="W_sylete;." --add-data="icon.png;." AudMX.py

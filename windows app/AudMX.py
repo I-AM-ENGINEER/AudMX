@@ -8,7 +8,7 @@ import win32api
 from PySide6.QtGui import QWindow
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
-from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
+from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon, QMessageBox
 from PySide6.QtCore import QIODevice, QTimer, QObject, Signal
 from PySide6.QtGui import QIcon
 from serialLib import seriall
@@ -102,6 +102,7 @@ class MainClass(QtWidgets.QWidget):
     # ser_work = 0
     mas_icon = []
     avto_run_flag = 0
+    __count_presed_button = 0
     dictVolumeDBtoProsent = [-65.25,
                              -64.49741,
                              -58.173828125,
@@ -206,12 +207,13 @@ class MainClass(QtWidgets.QWidget):
         super(MainClass, self).__init__()
 
         self.avto_run_flag = AvtoRun.readAppToAvtoRun("AudMX")
-
-        icon = QIcon(sys.argv[0][:sys.argv[0].rindex("\\")] + "\\icon.png")
-        self.trayIcon = SystemTrayIcon(icon,self.avto_run_flag, self)
+        icon = QIcon(os.path.abspath(os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))), 'iconTray.png')))
+        #icon = QIcon(sys.argv[0][:sys.argv[0].rindex("\\")] + "\\icon.png")
+        self.trayIcon = SystemTrayIcon(icon, self.avto_run_flag, self)
         self.trayIcon.show()
         pid, vid = self.readINIfile()
         self.ser = seriall()
+        # self.audioSessions = AudioUtilities.GetAllSessions()
 
         self.timer_2 = QTimer()
         self.timer_2.timeout.connect(self.updateStyleUI)
@@ -252,9 +254,10 @@ class MainClass(QtWidgets.QWidget):
             # self.ser_work = 0
 
     def upDateListOpenProcces(self):
+        # a = AudioUtilities.GetAllSessions()
         self.open_process_list = [session.Process.name() for session in AudioUtilities.GetAllSessions() if session.Process] + ["master.exe", "system.exe"]
     def upDateListMasIcon(self):
-        self.mas_icon = [[icon, num] for num, icon in enumerate(self.process_folder(".\\icon"))]
+        self.mas_icon = [[icon, num] for num, icon in enumerate(self.process_folder(sys.argv[0][:sys.argv[0].rindex("\\")] + ".\\icon"))]
 
         while (len(self.mas_icon) < 6):
             self.mas_icon.append([bytes([0]) * 352, len(self.mas_icon)])
@@ -272,6 +275,7 @@ class MainClass(QtWidgets.QWidget):
         if (self.ser.doesSerWork == 1):
             self.upDateListOpenProcces()
             if (self.last_process_list != self.open_process_list):
+                self.last_vol_level = [0, 0, 0, 0, 0]
                 self.volLevelApp = []
                 self.last_process_list = self.open_process_list
                 self.upDateListMasIcon()
@@ -283,7 +287,10 @@ class MainClass(QtWidgets.QWidget):
         #читает ини файл с некоторыми наситройками
         :return: None
         """
-        with open(sys.argv[0][:sys.argv[0].rindex("\\")] + '\\ini.txt') as f:
+
+
+        #with open(sys.argv[0][:sys.argv[0].rindex("\\")] + '\\ini.txt') as f:
+        with open(os.path.abspath(os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))), 'ini.txt'))) as f:
             lines = f.readlines()
         if len(lines) > 1:
             if lines[0].find("PID=") != -1 and lines[1].find("VID=") != -1:
@@ -301,16 +308,33 @@ class MainClass(QtWidgets.QWidget):
         :param comand: строка с командой типа ''
         :return: NONE
         """
-        comand = str(comand)
-        if comand.find('play') != -1:
-            win32api.keybd_event(win32con.VK_MEDIA_PLAY_PAUSE, 0, 0, 0)
-            win32api.keybd_event(win32con.VK_MEDIA_PLAY_PAUSE, 0, win32con.KEYEVENTF_KEYUP, 0)
-        elif comand.find('next') != -1:
-            win32api.keybd_event(win32con.VK_MEDIA_NEXT_TRACK, 0, 0, 0)
-            win32api.keybd_event(win32con.VK_MEDIA_NEXT_TRACK, 0, win32con.KEYEVENTF_KEYUP, 0)
-        elif comand.find('prev') != -1:
-            win32api.keybd_event(win32con.VK_MEDIA_PREV_TRACK, 0, 0, 0)
-            win32api.keybd_event(win32con.VK_MEDIA_PREV_TRACK, 0, win32con.KEYEVENTF_KEYUP, 0)
+        comand = str(comand).split("|")
+        comand[1] = int(comand[1])
+        if (comand[0] == "realised"):
+            if (self.__count_presed_button > 0):
+                self.__count_presed_button = 0
+                return
+            if comand[1] == 1:
+                win32api.keybd_event(win32con.VK_MEDIA_PLAY_PAUSE, 0, 0, 0)
+                win32api.keybd_event(win32con.VK_MEDIA_PLAY_PAUSE, 0, win32con.KEYEVENTF_KEYUP, 0)
+            elif comand[1] == 0:
+                win32api.keybd_event(win32con.VK_MEDIA_NEXT_TRACK, 0, 0, 0)
+                win32api.keybd_event(win32con.VK_MEDIA_NEXT_TRACK, 0, win32con.KEYEVENTF_KEYUP, 0)
+            elif comand[1] == 2:
+                win32api.keybd_event(win32con.VK_MEDIA_PREV_TRACK, 0, 0, 0)
+                win32api.keybd_event(win32con.VK_MEDIA_PREV_TRACK, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+        else:
+            self.__count_presed_button += 1
+            if (self.__count_presed_button > 10):
+                if comand[1] == 1:
+                    pass
+                elif comand[1] == 0:
+                    pass
+                elif comand[1] == 2:
+                    pass
+
+
 
     def levelVolHandle(self, comand: str) -> None:
         """
@@ -411,6 +435,7 @@ class MainClass(QtWidgets.QWidget):
         self.num_load_icon = self.num_load_icon + ans
         if (self.num_load_icon == 5):
             self.num_load_icon = 0
+            self.mas_icon.clear()
             return
         self.ser.writeSerial("SET_ICON " + str(self.mas_icon[self.num_load_icon][1]) + "\n")
         self.timer_loadByte.start()
@@ -432,16 +457,37 @@ class MainClass(QtWidgets.QWidget):
         # else:
         #     removeAppToAvtoRun("AudMX")
         # event.accept()
-def run_only_one_instance(app):
-    # Проверяем, запущено ли уже приложение
-    running_process_count = sum(1 for p in app.allWindows() if p.objectName() == "AudMX")
-
-    if running_process_count > 1:
-        sys.exit(0)
-
+# def run_only_one_instance(app):
+#     # Проверяем, запущено ли уже приложение
+#     running_process_count = sum(1 for p in app.allWindows() if p.objectName() == "AudMX")
+#
+#     if running_process_count > 1:
+#         sys.exit(0)
+#
+#
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    run_only_one_instance(app)
+    # run_only_one_instance(app)
     app.setQuitOnLastWindowClosed(False)
     window = MainClass()
     sys.exit(app.exec())
+# def run_app():
+#     app = QApplication(sys.argv)
+#
+#     # Check if another instance is running
+#     running = False
+#     for pid in app.allWidgets():
+#         if isinstance(pid, MainClass):
+#             running = True
+#             break
+#
+#     if not running:
+#
+#         app.setQuitOnLastWindowClosed(False)
+#         window = MainClass()
+#         sys.exit(app.exec())
+#     else:
+#         QMessageBox.warning(None, "Warning", "Another instance is already running.")
+#         sys.exit(1)
+# if __name__ == "__main__":
+#     run_app()

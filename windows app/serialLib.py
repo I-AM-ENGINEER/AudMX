@@ -120,8 +120,8 @@ class seriall(QObject):
         # temp = inputSrt[0:self.__inputSrt.find("\n")]
         # inputSrt = temp
 
-        if self.__inputSrt.find("SET_BUTTON:") != -1:
-            self.SignalReadButton.emit(self.__inputSrt[12])
+        if self.__inputSrt.find("BUTTON:") != -1:
+            self.SignalReadButton.emit(self.__inputSrt)
         elif self.__inputSrt.find("|") != -1:
             if (self.__inputSrt != self.__comand_Buff):
                 self.__comand_Buff = self.__inputSrt
