@@ -16,6 +16,8 @@ import setStyle_Black_Or_White
 from comtypes import CLSCTX_ALL
 from avto_run_settings import AvtoRun
 from volume_socket import SocketVolume
+from icon_manager import IcomReader, VaveLight
+
 
 
 theme = int
@@ -96,14 +98,14 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):           #класс прил�
 
 class MainClass(QtWidgets.QWidget):
     volLevelApp = []
-    last_vol_level = [0,0,0,0,0]
+
     last_process_list = []
     num_load_icon = 0
     teat_perer = 0
     open_process_list = []
     # ser_work = 0
-    mas_icon = []
-    avto_run_flag = 0
+    # mas_icon = []
+
     __count_presed_button = 0
     dictVolumeDBtoProsent = [-65.25,
                              -64.49741,
@@ -208,10 +210,10 @@ class MainClass(QtWidgets.QWidget):
     def __init__(self):
         super(MainClass, self).__init__()
 
-        self.avto_run_flag = AvtoRun.readAppToAvtoRun("AudMX")
-        icon = QIcon(os.path.abspath(os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))), 'iconTray.png')))
+
+        icon = QIcon(os.path.abspath(os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))), 'iconTrayB.png')))
         #icon = QIcon(sys.argv[0][:sys.argv[0].rindex("\\")] + "\\icon.png")
-        self.trayIcon = SystemTrayIcon(icon, self.avto_run_flag, self)
+        self.trayIcon = SystemTrayIcon(icon, AvtoRun.readAppToAvtoRun("AudMX"), self)
         self.trayIcon.show()
         pid, vid = self.readINIfile()
         self.ser = seriall()
@@ -233,8 +235,6 @@ class MainClass(QtWidgets.QWidget):
         self.trayIcon.SignalLIght2.connect(self.handleSignalLIght2)
         self.trayIcon.SignalLIght3.connect(self.handleSignalLIght3)
 
-
-
         self.ser.SignalSerialStartOk.connect(self.startMassege)
         self.ser.SignalReadButton.connect(lambda comand: self.keyPleerHandle(comand))
         self.ser.SignalReadVoluem.connect(lambda comand: self.levelVolHandle(comand))
@@ -242,31 +242,19 @@ class MainClass(QtWidgets.QWidget):
         # self.ser.SignalError.connect(lambda ans: self.handleSerError(ans))
         self.ser.SignalGetIcon.connect(self.handleGetIcon)
         self.ser.autoConnect(vid, pid, 1000000, True)
-        # self.timer_ser_con = QTimer()
-        # self.timer_ser_con.timeout.connect(self.ser.startSerialAutoConnect)
-        # self.timer_ser_con.setInterval(1500)
-        # self.timer_ser_con.start()
-        self.timer_light = QTimer()
-        self.timer_light.timeout.connect(self.updateLight)
-        self.timer_light.setInterval(33)
+
+        # self.timer_light = QTimer()
+        # self.timer_light.timeout.connect(self.updateLight)
+        # self.timer_light.setInterval(33)
 
 
-
-
-    # def handleSerError(self, ans: str):
-    #     if (ans == 'disconnected'):
-            # self.ser.closeSerial()
-            # self.timer_ser_con.start()
-            # self.ser_work = 0
 
     def upDateListOpenProcces(self):
         # a = AudioUtilities.GetAllSessions()
-        self.open_process_list = [session.Process.name() for session in AudioUtilities.GetAllSessions() if session.Process] + ["master.exe", "system.exe"]
+        self.open_process_list = [[session.Process.name(), session.Process.pid] for session in AudioUtilities.GetAllSessions() if session.Process] + [["master.exe", -1], ["system.exe", -1]]
     def upDateListMasIcon(self):
-        self.mas_icon = [[icon, num] for num, icon in enumerate(self.process_folder(sys.argv[0][:sys.argv[0].rindex("\\")] + ".\\icon"))]
+        self.icon_mass = IcomReader.loadIcons(sys.argv[0][:sys.argv[0].rindex("\\")] + ".\\icon", self.open_process_list, 5)
 
-        while (len(self.mas_icon) < 6):
-            self.mas_icon.append([bytes([0]) * 352, len(self.mas_icon)])
 
     def updateStyleUI(self):
         """
@@ -277,11 +265,21 @@ class MainClass(QtWidgets.QWidget):
         cssStyle, themeBW = setStyle_Black_Or_White.getStyleBW()
         if theme != themeBW:
             self.setStyleSheet(cssStyle)
+            if themeBW == 0:
+                icon = QIcon(os.path.abspath(
+                    os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))),
+                                 'iconTrayB.png')))
+            else:
+                icon = QIcon(os.path.abspath(
+                    os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))),
+                                 'iconTrayW.png')))
+            self.trayIcon.setIcon(icon)
 
         if (self.ser.doesSerWork == 1):
             self.upDateListOpenProcces()
             if (self.last_process_list != self.open_process_list):
-                self.last_vol_level = [0, 0, 0, 0, 0]
+                IcomReader.setLastLevel(self.icon_mass, 0)
+
                 self.volLevelApp = []
                 self.last_process_list = self.open_process_list
                 self.upDateListMasIcon()
@@ -293,8 +291,6 @@ class MainClass(QtWidgets.QWidget):
         #читает ини файл с некоторыми наситройками
         :return: None
         """
-
-
         #with open(sys.argv[0][:sys.argv[0].rindex("\\")] + '\\ini.txt') as f:
         with open(os.path.abspath(os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))), 'ini.txt'))) as f:
             lines = f.readlines()
@@ -351,94 +347,54 @@ class MainClass(QtWidgets.QWidget):
         comand = str(comand).split("|")
         if (len(comand) != 5):
             return
-        for num_app, volume_level in enumerate(comand[:len(self.volLevelApp)]):
-            volume_level = int(volume_level)
-            if (self.last_vol_level[num_app] == volume_level):
-                continue
-            self.last_vol_level[num_app] = volume_level
-
-            if (self.volLevelApp[num_app][0] == "master"):
-
-                devices = AudioUtilities.GetSpeakers()
-                interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-                volume = interface.QueryInterface(IAudioEndpointVolume)
-                volume.SetMasterVolumeLevel(self.dictVolumeDBtoProsent[int(volume_level / 10.24)], None)
-                continue
-
-            self.audioSessions = AudioUtilities.GetAllSessions()
-            self.appOpen = []
-            for session in self.audioSessions:
-
-                if session.Process and session.Process.name() == self.volLevelApp[num_app][0] + ".exe":
-                    self.appOpen.append((self.volLevelApp[num_app]), )
-                    volume = session._ctl.QueryInterface(ISimpleAudioVolume)
-                    # #/print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
-
-                    volume.SetMasterVolume(float(volume_level)/1024, None)
-                    self.volLevelApp[num_app][1] = True
-                    # break
-                elif (self.volLevelApp[num_app][0] == "system" and str(session)[-5] == 'DisplayName: @%SystemRoot%\System32\AudioSrv.Dll'):
-                    volume = session._ctl.QueryInterface(ISimpleAudioVolume)
-                    volume.SetMasterVolume(float(volume_level) / 1024, None)
-                    self.volLevelApp[num_app][1] = True
-
+        self.audioSessions = AudioUtilities.GetAllSessions()
+        for i in range(5):
+            self.icon_mass[i].volume_level = int(int(comand[i])/10.24)
+            if self.icon_mass[i].name == "":
+                return
+            if self.icon_mass[i].last_volume_level != self.icon_mass[i].volume_level:
+                self.icon_mass[i].last_volume_level = self.icon_mass[i].volume_level
+                if self.icon_mass[i].name == "master.exe":
+                    devices = AudioUtilities.GetSpeakers()
+                    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                    volume = interface.QueryInterface(IAudioEndpointVolume)
+                    volume.SetMasterVolumeLevel(self.dictVolumeDBtoProsent[self.icon_mass[i].volume_level], None)
+                    continue
+                for session in self.audioSessions:
+                    if session.Process and session.Process.name() == self.icon_mass[i].name:
+                        volume = session._ctl.QueryInterface(ISimpleAudioVolume)
+                        volume.SetMasterVolume(float(self.icon_mass[i].volume_level) / 100, None)
+                        # self.volLevelApp[num_app][1] = True
+                        # break
+                    elif (self.icon_mass[i].name == "system" and str(session)[
+                        -5] == 'DisplayName: @%SystemRoot%\System32\AudioSrv.Dll'):
+                        volume = session._ctl.QueryInterface(ISimpleAudioVolume)
+                        volume.SetMasterVolume(float(self.icon_mass[i].volume_level) / 100, None)
+                        # self.volLevelApp[num_app][1] = True
 
     def handleSignalLIght1(self):
-        self.timer_light.stop()
+        # self.timer_light.stop()
+        # IcomReader.stopSocketVol(self.icon_mass)
         self.ser.writeSerial("SET_LIGHT:white")
     def handleSignalLIght2(self):
-        self.timer_light.stop()
+        # self.timer_light.stop()
+        # IcomReader.stopSocketVol(self.icon_mass)
         self.ser.writeSerial("SET_LIGHT:wave")
     def handleSignalLIght3(self):
-        self.timer_light.start()
+        # self.timer_light.start()
         self.ser.writeSerial("SET_LIGHT:level_value")
-        self.volVlume = []
-        for _ in self.volLevelApp:
-            self.volVlume.appended(SocketVolume())
+        self.valve_light = VaveLight(self.icon_mass, self.ser.writeSerial)
+        self.valve_light.avtoUpdateStart()
+        # IcomReader.startSocketVol(self.icon_mass)
 
 
-    def updateLight(self):
-        com = ""
-        for app in self.appOpen:
-            com += ""
-        self.ser.writeSerial("VOL:"+ com)
-    def process_folder(self, folder_path: str) -> list[bytes]:
-        """
-        #читает иконки из папки и прогоняет их через преобразование
-        :param folder_path: - относительный путь к папку и иконками
-        :return: массив байтовых строк
-        """
-        byte_arrays = []
+    # def updateLight(self):
+    #     pass
+        # com = ""
+        # for icon in self.icon_mass:
+        #     com += str(icon.socket_volume) + "|"
+        # self.ser.writeSerial("VOL:"+ com[:-1])
 
-        for filename in os.listdir(folder_path):
-
-            if filename.endswith(".bmp"):
-                if (len(self.volLevelApp) > 4):
-                    return byte_arrays
-
-                file_path = os.path.join(folder_path, filename)
-
-                byte_array = self.bmp_to_byte_array(file_path)
-                if (len(byte_array) == 352):
-                    if str(filename[8:-4]) + '.exe' in self.open_process_list:
-                        self.volLevelApp.append([str(filename[8:-4]), True])
-                        byte_arrays.append(byte_array)
-                else:
-                    self.trayIcon.masegeIconWarning(str(filename[8:-4]))
-        return byte_arrays
-
-    def bmp_to_byte_array(self, image_path: str) -> bytes:
-        """
-        #преобразование картинок в байт массив
-        :param image_path: - путь к иконками
-        :return: байт массив
-        """
-        img = Image.open(image_path)
-        if img.mode != '1':
-            raise ValueError("Изображение не является монохромным")
-        img_bytes = img.tobytes()
-        #/print("bmp_to_byte_array: ", img_bytes)
-        return img_bytes
 
     def startMassege(self):
         """
@@ -455,59 +411,25 @@ class MainClass(QtWidgets.QWidget):
         self.num_load_icon = self.num_load_icon + ans
         if (self.num_load_icon == 5):
             self.num_load_icon = 0
-            self.mas_icon.clear()
+            # self.mas_icon.clear()
             return
-        self.ser.writeSerial("SET_ICON " + str(self.mas_icon[self.num_load_icon][1]) + "\n")
-        self.timer_loadByte.start()
+        self.ser.writeSerial("SET_ICON " + str(self.icon_mass[self.num_load_icon].num) + "\n")
+        #self.timer_loadByte.start()
 
     def handleGetIcon(self):
         self.timer_loadByte.start()
     def loadByteMasToESP(self):
         self.teat_perer += 1
         #/print(len(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64]) , self.teat_perer, self.num_load_icon)
-        self.ser.writeByteSerial(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64])
+        self.ser.writeByteSerial(self.icon_mass[self.num_load_icon].icon[(self.teat_perer - 1) * 64:self.teat_perer * 64])
         if (self.teat_perer == 6):
             self.timer_loadByte.stop()
             self.teat_perer = 0
             self.num_load_icon += 1
-    # def closeEvent(self, event):
 
-        # if self.avto_run_flag():
-        #     addAppToAvtoRun("AudMX", sys.argv[0])
-        # else:
-        #     removeAppToAvtoRun("AudMX")
-        # event.accept()
-# def run_only_one_instance(app):
-#     # Проверяем, запущено ли уже приложение
-#     running_process_count = sum(1 for p in app.allWindows() if p.objectName() == "AudMX")
-#
-#     if running_process_count > 1:
-#         sys.exit(0)
-#
-#
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     # run_only_one_instance(app)
     app.setQuitOnLastWindowClosed(False)
     window = MainClass()
     sys.exit(app.exec())
-# def run_app():
-#     app = QApplication(sys.argv)
-#
-#     # Check if another instance is running
-#     running = False
-#     for pid in app.allWidgets():
-#         if isinstance(pid, MainClass):
-#             running = True
-#             break
-#
-#     if not running:
-#
-#         app.setQuitOnLastWindowClosed(False)
-#         window = MainClass()
-#         sys.exit(app.exec())
-#     else:
-#         QMessageBox.warning(None, "Warning", "Another instance is already running.")
-#         sys.exit(1)
-# if __name__ == "__main__":
-#     run_app()

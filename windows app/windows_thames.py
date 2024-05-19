@@ -101,3 +101,7 @@ def getStyleBW(lock_theme = ''):
                         return cssStyle, value
         except:
             print('тема:' + str(value))
+
+
+
+# class SettingsAp():
