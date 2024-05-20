@@ -34,7 +34,7 @@ class seriall(QObject):
     def doesSerWork(self):
         return self.__ser_work
 
-    def autoConnect(self,  vendorIdentifier: int, productIdentifier: int, baudRate: int, reconnect = False):
+    def autoConnect(self,  vendorIdentifier: int, productIdentifier: int, baudRate: int, reconnect=False):
         self.__BaudRate = baudRate
         self.__vendorIdentifier = vendorIdentifier
         self.__productIdentifier = productIdentifier
@@ -150,3 +150,44 @@ class seriall(QObject):
         self.__flag_read_data = True
         print("ser write Byte: ", iner)
         self.__serial.write(bytes(iner))
+
+
+class SerCDC(seriall):
+    __flag_cdc = False
+    __quwewe_write = []
+    __last_write = None
+    __count_packeg = 0
+    __num_packeg = 0
+    def __init__(self, On_CDC: bool):
+        super().__init__()
+        self.__flag_cdc = On_CDC
+        self.__timer_cdc = QTimer()
+        self.__timer_cdc.timeout.connect(self.__load64Byte)
+        self.__timer_cdc.setInterval(10)
+    def writeSerial(self, iner: str):
+        if self.__flag_cdc == False:
+            super().writeSerial(iner)
+        else:
+
+            self.__quwewe_write.append(iner)
+            # self.__last_write = iner
+            # self.__count_packeg = (len(iner) / 64) + 1
+            # self.__load64Byte()
+            self.__timer_cdc.start()
+
+    def __load64Byte(self):
+        if self.__num_packeg < self.__count_packeg:
+            super().writeSerial(self.__last_write[self.__num_packeg * 64:(self.__num_packeg + 1) * 64])
+            self.__num_packeg += 1
+        else:
+            self.__num_packeg = 0
+            self.__count_packeg = 0
+            self.__last_write = 0
+            if len(self.__quwewe_write) != 0:
+                self.__last_write = self.__quwewe_write.pop()
+                self.__count_packeg = (len(self.__quwewe_write.pop()) / 64) + 1
+                self.__timer_cdc.start()
+            else:
+                self.__timer_cdc.stop()
+
+
