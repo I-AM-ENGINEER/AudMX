@@ -22,6 +22,7 @@ class seriall(QObject):
     __inputSrt = ""
     __flag_reconnect = False
     __ser_work = False
+    __handleRead = None
 
     def __init__(self):
         super().__init__()
@@ -33,6 +34,8 @@ class seriall(QObject):
     @property
     def doesSerWork(self):
         return self.__ser_work
+    def setHanglerRead(self, hang: object):
+        self.__handleRead = hang
 
     def autoConnect(self,  vendorIdentifier: int, productIdentifier: int, baudRate: int, reconnect=False):
         self.__BaudRate = baudRate
@@ -115,23 +118,27 @@ class seriall(QObject):
         else:
             self.__flag_do_read = 0
         self.__inputSrt = self.__inputSrt[:self.__inputSrt.find("\n")]
-        print("ser read: ", self.__inputSrt[:self.__inputSrt.find("\n")])
+        print("ser read: ", self.__inputSrt)
 
         # temp = inputSrt[0:self.__inputSrt.find("\n")]
         # inputSrt = temp
+        try:
+            self.__handleRead(self.__inputSrt)
+        except:
+            print("NO SET HANDLER!!!!!!!!")
 
-        if self.__inputSrt.find("BUTTON:") != -1:
-            self.SignalReadButton.emit(self.__inputSrt)
-        elif self.__inputSrt.find("|") != -1:
-            if (self.__inputSrt != self.__comand_Buff):
-                self.__comand_Buff = self.__inputSrt
-                self.SignalReadVoluem.emit(self.__inputSrt)
-        elif self.__inputSrt.find("OK") != -1:
-            self.SignalSetIcon.emit(0)
-        elif self.__inputSrt.find("ERROR: -1") != -1:
-            self.SignalSetIcon.emit(-1)
-        elif self.__inputSrt.find("Send 352 bytes") != -1:
-            self.SignalGetIcon.emit()
+        # if self.__inputSrt.find("BUTTON:") != -1:
+        #     self.SignalReadButton.emit(self.__inputSrt)
+        # elif self.__inputSrt.find("|") != -1:
+        #     if (self.__inputSrt != self.__comand_Buff):
+        #         self.__comand_Buff = self.__inputSrt
+        #         self.SignalReadVoluem.emit(self.__inputSrt)
+        # elif self.__inputSrt.find("OK") != -1:
+        #     self.SignalSetIcon.emit(0)
+        # elif self.__inputSrt.find("ERROR: -1") != -1:
+        #     self.SignalSetIcon.emit(-1)
+        # elif self.__inputSrt.find("Send 352 bytes") != -1:
+        #     self.SignalGetIcon.emit()
 
     def closeSerial(self):
         self.__serial.close()
@@ -164,20 +171,40 @@ class SerCDC(seriall):
         self.__timer_cdc = QTimer()
         self.__timer_cdc.timeout.connect(self.__load64Byte)
         self.__timer_cdc.setInterval(10)
+    @property
+    def mod_CDC(self):
+        return self.__flag_cdc
+    @mod_CDC.setter
+    def mod_CDC(self, mod: bool):
+        self.__flag_cdc = mod
+
     def writeSerial(self, iner: str):
         if self.__flag_cdc == False:
             super().writeSerial(iner)
         else:
 
-            self.__quwewe_write.append(iner)
+            self.__quwewe_write.append([iner , True])
             # self.__last_write = iner
             # self.__count_packeg = (len(iner) / 64) + 1
             # self.__load64Byte()
             self.__timer_cdc.start()
+    def writeByteSerial(self, iner: bytes):
+        if self.__flag_cdc == False:
+            super().writeByteSerial(iner)
+        self.__quwewe_write.append([iner, False])
+        # self.__last_write = iner
+        # self.__count_packeg = (len(iner) / 64) + 1
+        # self.__load64Byte()
+        self.__timer_cdc.start()
+
+        # self.__serial.write(bytes(iner))
 
     def __load64Byte(self):
         if self.__num_packeg < self.__count_packeg:
-            super().writeSerial(self.__last_write[self.__num_packeg * 64:(self.__num_packeg + 1) * 64])
+            if self.__last_write[1] == True:
+                super().writeSerial(self.__last_write[0][self.__num_packeg * 64:(self.__num_packeg + 1) * 64])
+            else:
+                super().writeByteSerial(self.__last_write[0][self.__num_packeg * 64:(self.__num_packeg + 1) * 64])
             self.__num_packeg += 1
         else:
             self.__num_packeg = 0
@@ -185,7 +212,7 @@ class SerCDC(seriall):
             self.__last_write = 0
             if len(self.__quwewe_write) != 0:
                 self.__last_write = self.__quwewe_write.pop()
-                self.__count_packeg = (len(self.__quwewe_write.pop()) / 64) + 1
+                self.__count_packeg = int((len(self.__last_write[0]) / 64)) + 1
                 self.__timer_cdc.start()
             else:
                 self.__timer_cdc.stop()

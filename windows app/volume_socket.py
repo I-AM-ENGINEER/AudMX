@@ -1,9 +1,9 @@
 import subprocess, signal
 import socket
 import threading
-import  time
+import time
 import os
-
+last_set_port = 13000
 class SocketVolume():
     __pid = 0
     __dst_port = -1
@@ -27,9 +27,11 @@ class SocketVolume():
         :param call_back: adr on func call_back(float)
         :param pid: proccess id for volumpid.exe
         '''
-        self.__dst_port = self.__setPort(13000 + num, 13400)
+        global last_set_port
+        self.__dst_port = self.__setPort(last_set_port+1, 13400)
         if self.__dst_port == -1:
             return
+        last_set_port = self.__dst_port
         print(self.__dst_port)
 
         self.__pid = pid

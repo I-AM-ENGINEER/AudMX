@@ -11,7 +11,7 @@ from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon, QMessageBox
 from PySide6.QtCore import QIODevice, QTimer, QObject, Signal
 from PySide6.QtGui import QIcon
-from serialLib import seriall
+from serialLib import seriall, SerCDC
 import setStyle_Black_Or_White
 from comtypes import CLSCTX_ALL
 from avto_run_settings import AvtoRun
@@ -103,6 +103,7 @@ class MainClass(QtWidgets.QWidget):
     num_load_icon = 0
     teat_perer = 0
     open_process_list = []
+    __comand_Buff = ''
     # ser_work = 0
     # mas_icon = []
 
@@ -216,7 +217,9 @@ class MainClass(QtWidgets.QWidget):
         self.trayIcon = SystemTrayIcon(icon, AvtoRun.readAppToAvtoRun("AudMX"), self)
         self.trayIcon.show()
         pid, vid = self.readINIfile()
-        self.ser = seriall()
+        # self.ser = seriall()
+        self.ser = SerCDC(True)
+        self.ser.setHanglerRead(self.hanglerReadSer)
         # self.audioSessions = AudioUtilities.GetAllSessions()
 
         self.timer_2 = QTimer()
@@ -225,35 +228,48 @@ class MainClass(QtWidgets.QWidget):
         self.timer_2.start()
         self.updateStyleUI()
         self.upDateListOpenProcces()
-        self.upDateListMasIcon()
+        self.icon_mass = []
 
-        self.timer_loadByte = QTimer()
-        self.timer_loadByte.timeout.connect(self.loadByteMasToESP)
-        self.timer_loadByte.setInterval(10)
+        # self.upDateListMasIcon()
+
+        # self.timer_loadByte = QTimer()
+        # self.timer_loadByte.timeout.connect(self.loadByteMasToESP)
+        # self.timer_loadByte.setInterval(10)
 
         self.trayIcon.SignalLIght1.connect(self.handleSignalLIght1)
         self.trayIcon.SignalLIght2.connect(self.handleSignalLIght2)
         self.trayIcon.SignalLIght3.connect(self.handleSignalLIght3)
 
         self.ser.SignalSerialStartOk.connect(self.startMassege)
-        self.ser.SignalReadButton.connect(lambda comand: self.keyPleerHandle(comand))
-        self.ser.SignalReadVoluem.connect(lambda comand: self.levelVolHandle(comand))
-        self.ser.SignalSetIcon.connect(lambda ans: self.loadIconOnESP(ans))
-        # self.ser.SignalError.connect(lambda ans: self.handleSerError(ans))
-        self.ser.SignalGetIcon.connect(self.handleGetIcon)
+        # self.ser.SignalReadButton.connect(lambda comand: self.keyPleerHandle(comand))
+        # self.ser.SignalReadVoluem.connect(lambda comand: self.levelVolHandle(comand))
+        # self.ser.SignalSetIcon.connect(lambda ans: self.loadIconOnESP(ans))
+        # # self.ser.SignalError.connect(lambda ans: self.handleSerError(ans))
+        # self.ser.SignalGetIcon.connect(self.handleGetIcon)
         self.ser.autoConnect(vid, pid, 1000000, True)
 
         # self.timer_light = QTimer()
         # self.timer_light.timeout.connect(self.updateLight)
         # self.timer_light.setInterval(33)
-
-
+    def hanglerReadSer(self, iner: str):
+        if iner.find("BUTTON:") != -1:
+            self.keyPleerHandle(iner)
+        elif iner.find("|") != -1:
+            if (iner != self.__comand_Buff):
+                self.__comand_Buff = iner
+                self.levelVolHandle(iner)
+        elif iner.find("OK") != -1:
+            self.loadIconOnESP(1)
+        elif iner.find("ERROR: -1") != -1:
+            self.loadIconOnESP(0)
+        elif iner.find("Send 352 bytes") != -1:
+            self.handleGetIcon()
 
     def upDateListOpenProcces(self):
         # a = AudioUtilities.GetAllSessions()
         self.open_process_list = [[session.Process.name(), session.Process.pid] for session in AudioUtilities.GetAllSessions() if session.Process] + [["master.exe", -1], ["system.exe", -1]]
-    def upDateListMasIcon(self):
-        self.icon_mass = IcomReader.loadIcons(sys.argv[0][:sys.argv[0].rindex("\\")] + ".\\icon", self.open_process_list, 5)
+    # def upDateListMasIcon(self):
+    #     self.icon_mass = IcomReader.loadIcons(sys.argv[0][:sys.argv[0].rindex("\\")] + ".\\icon", self.open_process_list, 5)
 
 
     def updateStyleUI(self):
@@ -267,24 +283,26 @@ class MainClass(QtWidgets.QWidget):
             self.setStyleSheet(cssStyle)
             if themeBW == 0:
                 icon = QIcon(os.path.abspath(
-                    os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))),
-                                 'iconTrayB.png')))
+                    os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))), 'iconTrayB.png')))
             else:
                 icon = QIcon(os.path.abspath(
-                    os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))),
-                                 'iconTrayW.png')))
+                    os.path.join(getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))), 'iconTrayW.png')))
             self.trayIcon.setIcon(icon)
 
         if (self.ser.doesSerWork == 1):
             self.upDateListOpenProcces()
             if (self.last_process_list != self.open_process_list):
+                # self.__tmp_icon_mass = []
                 IcomReader.setLastLevel(self.icon_mass, 0)
-
+                # if (self.__tmp_icon_mass != self.icon_mass):
+                # self.icon_mass = self.__tmp_icon_mass
                 self.volLevelApp = []
                 self.last_process_list = self.open_process_list
-                self.upDateListMasIcon()
-                self.loadIconOnESP()
-
+                tempp = IcomReader.loadIcons(sys.argv[0][:sys.argv[0].rindex("\\")] + ".\\icon", self.open_process_list, 5)
+                if ([i.name for i in tempp] != [i.name for i in self.icon_mass]):
+                    self.icon_mass = tempp
+                # self.upDateListMasIcon()
+                    self.loadIconOnESP()
 
     def readINIfile(self):
         """
@@ -336,8 +354,6 @@ class MainClass(QtWidgets.QWidget):
                 elif comand[1] == 2:
                     pass
 
-
-
     def levelVolHandle(self, comand: str) -> None:
         """
         #обработчик команд из сериал порта и выставляющий нужый уровень громкости
@@ -387,15 +403,6 @@ class MainClass(QtWidgets.QWidget):
         self.valve_light.avtoUpdateStart()
         # IcomReader.startSocketVol(self.icon_mass)
 
-
-    # def updateLight(self):
-    #     pass
-        # com = ""
-        # for icon in self.icon_mass:
-        #     com += str(icon.socket_volume) + "|"
-        # self.ser.writeSerial("VOL:"+ com[:-1])
-
-
     def startMassege(self):
         """
         #вызываеться послесигнала о подключении и запускает перврначальную настройку(записывает картинки в микщер)
@@ -409,23 +416,29 @@ class MainClass(QtWidgets.QWidget):
 
     def loadIconOnESP(self, ans=0):
         self.num_load_icon = self.num_load_icon + ans
+        self.valve_light.avtoUpdateStop()
         if (self.num_load_icon == 5):
             self.num_load_icon = 0
+            self.valve_light.avtoUpdateStart()
             # self.mas_icon.clear()
             return
         self.ser.writeSerial("SET_ICON " + str(self.icon_mass[self.num_load_icon].num) + "\n")
         #self.timer_loadByte.start()
 
+
     def handleGetIcon(self):
-        self.timer_loadByte.start()
-    def loadByteMasToESP(self):
-        self.teat_perer += 1
-        #/print(len(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64]) , self.teat_perer, self.num_load_icon)
-        self.ser.writeByteSerial(self.icon_mass[self.num_load_icon].icon[(self.teat_perer - 1) * 64:self.teat_perer * 64])
-        if (self.teat_perer == 6):
-            self.timer_loadByte.stop()
-            self.teat_perer = 0
-            self.num_load_icon += 1
+        self.ser.writeByteSerial(self.icon_mass[self.num_load_icon].icon)
+        # self.timer_loadByte.start()
+    # def loadByteMasToESP(self):
+    #     self.teat_perer += 1
+    #     #/print(len(self.mas_icon[self.num_load_icon][0][(self.teat_perer - 1) * 64:self.teat_perer * 64]) , self.teat_perer, self.num_load_icon)
+    #     self.ser.writeByteSerial(self.icon_mass[self.num_load_icon].icon[(self.teat_perer - 1) * 64:self.teat_perer * 64])
+    #     if (self.teat_perer == 6):
+    #         self.timer_loadByte.stop()
+    #         self.teat_perer = 0
+    #         self.num_load_icon += 1
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

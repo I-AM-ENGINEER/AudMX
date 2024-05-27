@@ -9,8 +9,7 @@ class ThemesWindows():
     __reg_path = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize'
 
     @staticmethod
-    def getStyle(lock_theme = ''):
-
+    def getStyle():
 
         try:
             reg_key = winreg.OpenKey(reg, reg_path)
