@@ -56,8 +56,12 @@ class Device{
     uint8_t _button_for_bluetooth_config = -1;
     uint8_t _button_next = -1;
     uint8_t _button_select = -1;
+    bool _is_audioreactive = false;
 public:
     Slider sliders[SLIDERS_COUNT];
+    bool isAudioReactive( void ){
+        return _is_audioreactive;
+    }
     void init( void );
     void update( void );
 };

@@ -327,8 +327,8 @@ void Device::update( void ){
                             current_menu[selected_item]->b = !current_menu[selected_item]->b;
                         }else if(current_menu[selected_item]->type == MENU_ITEM_TYPE_INT){
                             current_menu[selected_item]->i32 += 1;
-                            menuUpdateSettings();
                         }
+                        menuUpdateSettings();
                         if(btn_step == 0){
                             btn_step++;
                         }else if(btn_step == 2){

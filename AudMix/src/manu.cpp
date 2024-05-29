@@ -167,6 +167,7 @@ static bool menu_nvs_load( menu_item_t* item ){
 
 void Device::menuUpdateSettings( void ){
     uint32_t i = 0;
+    _is_audioreactive = menu_item_volume_reactive.b;
     for(auto &slider : sliders){
         slider.strip.brightnessSet(menu_item_brightness.i32, menu_item_brightness_background.i32);
         slider.strip.saturationSet((uint8_t)(((float)menu_item_saturation.i32)*25.5), (uint8_t)(((float)menu_item_saturation_background.i32)*25.5));

@@ -76,7 +76,7 @@ void stripTask( void *args ){
 void readTask( void *args ){
     uint16_t positions_old[SLIDERS_COUNT] = {0};
 	bool buttons_old[SLIDERS_COUNT] = {false};
-    int64_t timestamp = 0;
+    int64_t timestamp = 3'000'000;
 
     while (1){
         bool need_positions_send = false;
@@ -85,7 +85,9 @@ void readTask( void *args ){
             audMix.sliders[i].updatePosition();
             float position_current_f = audMix.sliders[i].readPosition();
             uint16_t position_current = (uint16_t)std::round(position_current_f * 1023.0f);
-            audMix.sliders[i].strip.volumeSet(position_current_f);
+            if(!audMix.isAudioReactive()){
+                audMix.sliders[i].strip.volumeSet(position_current_f);
+            }
             if(positions_old[i] != position_current){
                 need_positions_send = true;
                 positions_old[i] = position_current;
@@ -176,10 +178,6 @@ void consoleTask( void *args ){
         std::getline(std::cin, str);
 
         if(str.compare(0, strlen(CMD_SET_ICON), CMD_SET_ICON) == 0){
-
-        }
-
-        if(str.compare(0, strlen(CMD_SET_ICON), CMD_SET_ICON) == 0){
             uint8_t icon_array[((ICON_WIDTH+7)/8)*ICON_HEIGHT];
 			size_t prefixLen = strlen(CMD_SET_ICON);
 			if (str.size() <= prefixLen + 1) {
@@ -197,6 +195,22 @@ void consoleTask( void *args ){
             std::cin.read((char*)icon_array, sizeof(icon_array));
             audMix.sliders[display_num].setIcon(icon_array, ICON_WIDTH, ICON_HEIGHT);
             audMix.sliders[display_num].displayIcon(true);
+        }else if(str.compare(0, strlen(CMD_VOL_UPDATE), CMD_VOL_UPDATE) == 0){
+            float volumeValues[5];
+            const char *tokens = str.c_str() + 4; // Skip "VOL:"
+            char *token;
+            int index = 0;
+            token = strtok((char *)tokens, "|");
+            while (token != NULL && index < 5) {
+                volumeValues[index++] = atof(token);
+                token = strtok(NULL, "|");
+            }
+            
+            if(audMix.isAudioReactive()){
+                for(uint32_t i = 0; i < 5; i++){
+                    audMix.sliders[i].strip.volumeSet(volumeValues[i]);
+                }
+            }
         }else{
             res = -1;
         }
