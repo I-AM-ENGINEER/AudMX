@@ -4,6 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/semphr.h"
+#include "nvs_flash.h"
 #include "esp_ws28xx.h"
 #include "slider.hpp"
 #include "system.hpp"
@@ -23,7 +24,7 @@ typedef enum {
 } menu_item_type_t;
 
 typedef struct {
-    char name[16];
+    char name[NVS_KEY_NAME_MAX_SIZE];
     bool enable;
     menu_item_type_t type;
     union{
@@ -42,7 +43,10 @@ class Device{
     void virtDispInit( void );
     void configure( void );
     void clalibrate( void );
-    
+    void menuInit( void );
+    void menuSaveAll( void );
+    void menuUpdateSettings( void );
+
     Battery battery;
     CRGB *_ws2812_output_buffer;
     CRGB _ws2812_buffer[STRIP_LED_COUNT];

@@ -19,7 +19,7 @@ void Device::configure( void ){
         cfg.i2c_addr        = 0x3C;
         cfg.pin_sda         = I2C_SDA_PIN;
         cfg.pin_scl         = 10;
-        cfg.led_start       = 1;
+        cfg.led_start       = 81;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
@@ -34,7 +34,7 @@ void Device::configure( void ){
         cfg.i2c_addr        = 0x3D;
         cfg.pin_sda         = I2C_SDA_PIN;
         cfg.pin_scl         = 10;
-        cfg.led_start       = 21;
+        cfg.led_start       = 61;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
@@ -64,7 +64,7 @@ void Device::configure( void ){
         cfg.i2c_addr        = 0x3C;
         cfg.pin_sda         = I2C_SDA_PIN;
         cfg.pin_scl         = 20;
-        cfg.led_start       = 61;
+        cfg.led_start       = 21;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
@@ -79,7 +79,7 @@ void Device::configure( void ){
         cfg.i2c_addr        = 0x3C;
         cfg.pin_sda         = I2C_SDA_PIN;
         cfg.pin_scl         = 21;
-        cfg.led_start       = 81;
+        cfg.led_start       = 1;
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;

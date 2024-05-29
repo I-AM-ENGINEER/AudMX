@@ -13,6 +13,7 @@
 
 #define PROMPT_STR CONFIG_IDF_TARGET
 #define CMD_SET_ICON    "SET_ICON"
+#define CMD_VOL_UPDATE  "VOL"
 
 extern "C" {
     void app_main(void);
@@ -82,7 +83,9 @@ void readTask( void *args ){
         // Check updated value
         for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
             audMix.sliders[i].updatePosition();
-            uint16_t position_current = (uint16_t)std::round(audMix.sliders[i].readPosition() * 1023.0f);
+            float position_current_f = audMix.sliders[i].readPosition();
+            uint16_t position_current = (uint16_t)std::round(position_current_f * 1023.0f);
+            audMix.sliders[i].strip.volumeSet(position_current_f);
             if(positions_old[i] != position_current){
                 need_positions_send = true;
                 positions_old[i] = position_current;
@@ -127,7 +130,7 @@ void readTask( void *args ){
             }
             std::cout << std::endl;
         }
-        delay(10);
+        delay(2);
     }
 }
 
@@ -171,6 +174,10 @@ void consoleTask( void *args ){
     while (1){
         int res = 0;
         std::getline(std::cin, str);
+
+        if(str.compare(0, strlen(CMD_SET_ICON), CMD_SET_ICON) == 0){
+
+        }
 
         if(str.compare(0, strlen(CMD_SET_ICON), CMD_SET_ICON) == 0){
             uint8_t icon_array[((ICON_WIDTH+7)/8)*ICON_HEIGHT];
