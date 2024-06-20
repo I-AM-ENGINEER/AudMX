@@ -122,29 +122,14 @@ menu_item_t *menu_static[] = {
     nullptr,
 };
 
+menu_item_t *(*all_menus[])[] = {
+    &menu_items,
+    &menu_rainbow,
+    &menu_static,
+    nullptr,
+};
+
 #define MENU_NVS_STORAGE_TAG    "MENU"
-
-static bool menu_nvs_save( const menu_item_t* item );
-static bool menu_nvs_load( menu_item_t* item );
-
-static bool menu_nvs_save( const menu_item_t* item ){
-    menu_item_t readed_nvs;
-    memcpy(readed_nvs.name, item->name, sizeof(item->name));
-    if(menu_nvs_load(&readed_nvs) == true){
-        if(memcmp(item, &readed_nvs, sizeof(menu_item_t)) == 0){
-            return false;
-        }
-    }
-    nvs_handle_t nvs_handle;
-    nvs_open(MENU_NVS_STORAGE_TAG, NVS_READWRITE, &nvs_handle); 
-
-    char key[NVS_KEY_NAME_MAX_SIZE];
-    memcpy(key, item->name, sizeof(item->name));
-    nvs_set_blob(nvs_handle, key, item, sizeof(menu_item_t));
-
-    nvs_close(nvs_handle);
-    return true;
-}
 
 static bool menu_nvs_load( menu_item_t* item ){
     nvs_handle_t nvs_handle;
@@ -162,6 +147,25 @@ static bool menu_nvs_load( menu_item_t* item ){
     if(readed_len != sizeof(menu_item_t)){
         return false;
     }
+    return true;
+}
+
+static bool menu_nvs_save( const menu_item_t* item ){
+    menu_item_t readed_nvs;
+    memcpy(readed_nvs.name, item->name, sizeof(item->name));
+    if(menu_nvs_load(&readed_nvs) == true){
+        if(memcmp(item, &readed_nvs, sizeof(menu_item_t)) == 0){
+            return false;
+        }
+    }
+    nvs_handle_t nvs_handle;
+    nvs_open(MENU_NVS_STORAGE_TAG, NVS_READWRITE, &nvs_handle); 
+
+    char key[NVS_KEY_NAME_MAX_SIZE];
+    memcpy(key, item->name, sizeof(item->name));
+    nvs_set_blob(nvs_handle, key, item, sizeof(menu_item_t));
+
+    nvs_close(nvs_handle);
     return true;
 }
 
@@ -190,32 +194,20 @@ void Device::menuUpdateSettings( void ){
 
 void Device::menuInit( void ){
     //menuSaveAll(); // For reset to default
-    for(uint32_t i = 0; menu_items[i] != nullptr; i++){
-        if(!menu_nvs_load(menu_items[i])){
-            menu_nvs_save(menu_items[i]);
-        }
-    }
-    for(uint32_t i = 0; menu_rainbow[i] != nullptr; i++){
-        if(!menu_nvs_load(menu_rainbow[i])){
-            menu_nvs_save(menu_rainbow[i]);
-        }
-    }
-    for(uint32_t i = 0; menu_static[i] != nullptr; i++){
-        if(!menu_nvs_load(menu_static[i])){
-            menu_nvs_save(menu_static[i]);
+    for(uint32_t i = 0; all_menus[i] != nullptr; i++){
+        for(uint32_t j = 0; (*all_menus[i])[j] != nullptr; j++){
+            if(!menu_nvs_load((*all_menus[i])[j])){
+                menu_nvs_save((*all_menus[i])[j]);
+            }
         }
     }
     menuUpdateSettings();
 }
 
 void Device::menuSaveAll( void ){
-    for(uint32_t i = 0; menu_items[i] != nullptr; i++){
-        menu_nvs_save(menu_items[i]);
-    }
-    for(uint32_t i = 0; menu_rainbow[i] != nullptr; i++){
-        menu_nvs_save(menu_rainbow[i]);
-    }
-    for(uint32_t i = 0; menu_static[i] != nullptr; i++){
-        menu_nvs_save(menu_static[i]);
+    for(uint32_t i = 0; all_menus[i] != nullptr; i++){
+        for(uint32_t j = 0; (*all_menus[i])[j] != nullptr; j++){
+            menu_nvs_save((*all_menus[i])[j]);
+        }
     }
 }

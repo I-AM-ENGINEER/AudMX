@@ -7,7 +7,7 @@
 #include "nvs_flash.h"
 #include "esp_ws28xx.h"
 #include "slider.hpp"
-#include "system.hpp"
+#include "battery.hpp"
 
 #define SLIDERS_ADC_UNIT    ADC_UNIT_1
 #define I2C_SDA_PIN         8
@@ -65,3 +65,5 @@ public:
     void init( void );
     void update( void );
 };
+
+extern Device audMix;

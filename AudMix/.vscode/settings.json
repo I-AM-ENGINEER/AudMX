@@ -14,7 +14,9 @@
         "string.h": "c",
         "esp_log.h": "c",
         "*.tcc": "cpp",
-        "esp_ws28xx.h": "c"
+        "esp_ws28xx.h": "c",
+        "cmath": "cpp",
+        "iostream": "cpp"
     },
     "idf.portWin": "COM12"
 }

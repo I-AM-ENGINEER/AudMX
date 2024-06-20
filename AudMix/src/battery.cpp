@@ -1,10 +1,6 @@
-#include "system.hpp"
+#include "battery.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
-void delay( uint32_t ms ){
-    vTaskDelay(pdMS_TO_TICKS(ms));
-}
 
 void Battery::init( void ){
     adc_oneshot_unit_init_cfg_t init_config1 = {

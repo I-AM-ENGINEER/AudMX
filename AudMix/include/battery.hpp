@@ -18,5 +18,3 @@ public:
     float readLevel( void );
     void init( void );
 };
-
-void delay( uint32_t ms );

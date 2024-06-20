@@ -1,6 +1,5 @@
 #include "slider.hpp"
 #include "display.hpp"
-#include "system.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "esp_log.h"
@@ -75,7 +74,6 @@ void Slider::updateDisplay( void ){
     }
     
     display.drawBitmap(pos_x, pos_y, _ico_buffer, _ico_size_x, _ico_size_y, 0xFFFFFF, 0x000000);
-
     
     xSemaphoreGive(displaysMutex);
 }
