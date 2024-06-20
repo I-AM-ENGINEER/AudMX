@@ -14,7 +14,7 @@ void readPotentiometersButtonsTask( void *args ){
     int64_t timestamp = 3'000'000;
 
     while (1){
-        bool need_positions_send = false;
+        static bool need_positions_send = false;
         // Check updated value
         for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
             audMix.sliders[i].updatePosition();
@@ -66,6 +66,7 @@ void readPotentiometersButtonsTask( void *args ){
                 }
             }
             std::cout << std::endl;
+            need_positions_send = false;
         }
         vTaskDelay(pdMS_TO_TICKS(2));
     }
