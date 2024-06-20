@@ -1,6 +1,7 @@
 #include "stripFrame.hpp"
 #include "esp_timer.h"
 #include <stdlib.h>
+#include <math.h>
 
 #define LED_RAINBOW_PIXEL_DIF			(20)
 
@@ -25,6 +26,14 @@ static CRGB hsv2rgb(uint8_t h, uint8_t s, uint8_t v) {
     return rgb;
 }
 
+static CRGB combineRGB(CRGB a, CRGB b, float k) {
+    CRGB result;
+    result.r = (uint8_t)((1 - k) * a.r + k * b.r);
+    result.g = (uint8_t)((1 - k) * a.g + k * b.g);
+    result.b = (uint8_t)((1 - k) * a.b + k * b.b);
+    return result;
+}
+
 CRGB StripFrame::get_pixel_color( uint32_t pixelN ){
     float perc = (float)pixelN / (float)_cfg.led_count;
     uint32_t pixel_color = 0;
@@ -40,19 +49,26 @@ CRGB StripFrame::get_pixel_color( uint32_t pixelN ){
         }
     }
     
-    if(perc > (1.0f - _volume_f)){
-        brightness = _hsv_brightness;
-        saturation = _hsv_saturation_main;
+    CRGB RGB;
+    if(fabsf(perc - (1.0f - _volume_f)) < 0.05f){
+        float bk = ((((1.0f - _volume_f) - perc + 0.05f) * 10.0f));
+	    CRGB RGB_main = hsv2rgb(pixel_color, _hsv_saturation_main, _hsv_brightness);
+	    CRGB RGB_bg   = hsv2rgb(pixel_color, _hsv_saturation_background, _hsv_brightness_background);
+        RGB = combineRGB(RGB_main, RGB_bg, bk);
     }else{
-        brightness = _hsv_brightness_background;
-        saturation = _hsv_saturation_background;
+        if(perc > (1.0f - _volume_f)){
+            brightness = _hsv_brightness;
+            saturation = _hsv_saturation_main;
+        }else{
+            brightness = _hsv_brightness_background;
+            saturation = _hsv_saturation_background;
+        }
+        if(brightness < 4){
+            pixel_color = 0;
+            saturation  = 0;
+        }
+        RGB = hsv2rgb(pixel_color, saturation, brightness);
     }
-    if(brightness < 4){
-        pixel_color = 0;
-        saturation  = 0;
-    }
-
-	CRGB RGB = hsv2rgb(pixel_color, saturation, brightness);
 	return RGB;
 }
 

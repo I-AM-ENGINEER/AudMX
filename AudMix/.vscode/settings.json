@@ -16,7 +16,8 @@
         "*.tcc": "cpp",
         "esp_ws28xx.h": "c",
         "cmath": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "random": "cpp"
     },
     "idf.portWin": "COM12"
 }
