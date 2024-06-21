@@ -1,4 +1,5 @@
 #include "commTask.hpp"
+#include "bt_interface.h"
 #include "device.hpp"
 #include "main.h"
 #include <iostream>
@@ -6,6 +7,7 @@
 #define CMD_SET_ICON    "SET_ICON"
 #define CMD_VOL_UPDATE  "VOL"
 #define CMD_USB_PING    "ISWORK"
+#define CMD_AUDREACT    "AUDREACT"
 
 void communicationTask( void *args ){
     std::string str = "";
@@ -50,6 +52,24 @@ void communicationTask( void *args ){
             }
         }else if(str.compare(0, strlen(CMD_USB_PING), CMD_USB_PING) == 0){
             sleepPing();
+        }else if(str.compare(0, strlen(CMD_AUDREACT), CMD_AUDREACT) == 0){
+            const char *tokens = str.c_str() + 8; // Skip "AUDREACT"
+            if(*tokens == ':'){
+                tokens++;
+                if(*tokens == 'T'){
+                    audMix.isAudioReactive(true);
+                }else{
+                    audMix.isAudioReactive(false);
+                }
+            }else if(*tokens == '?'){
+                if(audMix.isAudioReactive()){
+                    std::cout << "AUDREACT:T" << std::endl;
+                }else{
+                    std::cout << "AUDREACT:F" << std::endl;
+                }
+            }
+            
+            
         }else{
             res = -1;
         }
