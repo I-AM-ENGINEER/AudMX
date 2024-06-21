@@ -83,7 +83,8 @@
         "bt_interface.h": "c",
         "menu.h": "c",
         "console.h": "c",
-        "ble_hs.h": "c"
+        "ble_hs.h": "c",
+        "soc.h": "c"
     },
     "idf.portWin": "COM12"
 }
