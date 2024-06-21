@@ -73,7 +73,17 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "bt_spp.h": "c",
-        "nimble_port_freertos.h": "c"
+        "nimble_port_freertos.h": "c",
+        "nimble_port.h": "c",
+        "modlog.h": "c",
+        "device.hpp": "c",
+        "ble_svc_gatt.h": "c",
+        "nvs_flash.h": "c",
+        "util.h": "c",
+        "bt_interface.h": "c",
+        "menu.h": "c",
+        "console.h": "c",
+        "ble_hs.h": "c"
     },
     "idf.portWin": "COM12"
 }

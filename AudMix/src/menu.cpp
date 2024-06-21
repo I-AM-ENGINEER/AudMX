@@ -1,6 +1,8 @@
 #include "device.hpp"
 #include <stdlib.h>
 #include "nvs_flash.h"
+#include "menu.h"
+#include "bt_spp.h"
 
 menu_item_t menu_item_animation_mode = {
     .name = "Mode",
@@ -172,6 +174,7 @@ static bool menu_nvs_save( const menu_item_t* item ){
 void Device::menuUpdateSettings( void ){
     uint32_t i = 0;
     _is_audioreactive = menu_item_volume_reactive.b;
+    ble_notification_volreactive_update(_is_audioreactive);
     for(auto &slider : sliders){
         slider.strip.brightnessSet(menu_item_brightness.i32, menu_item_brightness_background.i32);
         slider.strip.saturationSet((uint8_t)(((float)menu_item_saturation.i32)*25.5), (uint8_t)(((float)menu_item_saturation_background.i32)*25.5));

@@ -40,5 +40,8 @@ uint16_t Battery::readVoltage( void ){
 /// @param  
 /// @return 0.0 - fully discharged, 1.0 - fully charged
 float Battery::readLevel( void ){
+    //float mv = (float)readVoltage();
+    //mv -= 3300.0f;
+    //if()
     return 0.0f;
 }

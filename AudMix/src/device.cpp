@@ -11,8 +11,11 @@
 #include "esp_ws28xx.h"
 #include "esp_log.h"
 #include "device.hpp"
+#include "menu.h"
 
 #define PROMPT_STR CONFIG_IDF_TARGET
+
+extern menu_item_t menu_item_volume_reactive;
 
 CRGB *ws2812b_display_buffer;
 
@@ -57,6 +60,13 @@ void Device::nvsInit( void ){
     } else {
         ESP_LOGE("NVS", "NVS partition initialization error: %d (%s)", err, esp_err_to_name(err));
     };
+}
+
+bool Device::isAudioReactive( bool state ){
+    menu_item_volume_reactive.b = state;
+    menuUpdateSettings();
+    menuSaveAll();
+    return _is_audioreactive;
 }
 
 void Device::init( void ){

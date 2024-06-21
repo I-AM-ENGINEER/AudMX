@@ -30,7 +30,7 @@ void app_main() {
 
     audMix.init();
 
-    bluetooth_init();
+    ble_init();
 
     xTaskCreate(communicationTask,                  "consoleTask", 	    8000, NULL, 15, NULL);
     xTaskCreate(menuTask, 	                        "menuTask", 	    3000, NULL, 5,  NULL);

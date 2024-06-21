@@ -9,90 +9,23 @@
 #include "console/console.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
-
-void
-print_bytes(const uint8_t *bytes, int len)
-{
-    int i;
-
-    for (i = 0; i < len; i++) {
-        MODLOG_DFLT(INFO, "%s0x%02x", i != 0 ? ":" : "", bytes[i]);
-    }
-}
-
-void
-print_addr(const void *addr)
-{
-    const uint8_t *u8p;
-
-    u8p = addr;
-    MODLOG_DFLT(INFO, "%02x:%02x:%02x:%02x:%02x:%02x",
-                u8p[5], u8p[4], u8p[3], u8p[2], u8p[1], u8p[0]);
-}
-
-char *
-addr_str(const void *addr)
-{
-    static char buf[6 * 2 + 5 + 1];
-    const uint8_t *u8p;
-
-    u8p = addr;
-    sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
-            u8p[5], u8p[4], u8p[3], u8p[2], u8p[1], u8p[0]);
-
-    return buf;
-}
-
-void
-print_mbuf(const struct os_mbuf *om)
-{
-    int colon, i;
-
-    colon = 0;
-    while (om != NULL) {
-        if (colon) {
-            MODLOG_DFLT(DEBUG, ":");
-        } else {
-            colon = 1;
-        }
-        for (i = 0; i < om->om_len; i++) {
-            MODLOG_DFLT(DEBUG, "%s0x%02x", i != 0 ? ":" : "", om->om_data[i]);
-        }
-        om = SLIST_NEXT(om, om_next);
-    }
-}
-
-
-
-
+#include "bt_interface.h"
+#include "menu.h"
 
 static int ble_spp_server_gap_event(struct ble_gap_event *event, void *arg);
 static uint8_t own_addr_type;
 int gatt_svr_register(void);
-static bool conn_handle_subs[CONFIG_BT_NIMBLE_MAX_CONNECTIONS + 1];
+static bool conn_handle_subs[CONFIG_BT_NIMBLE_MAX_CONNECTIONS + 1] = {false};
 static uint16_t ble_spp_svc_gatt_read_val_handle;
+static uint16_t ble_spp_svc_gatt_read_val_handle3;
+static uint16_t ble_spp_svc_gatt_read_val_handle2;
 
-static void ble_spp_server_print_conn_desc(struct ble_gap_conn_desc *desc) {
-    MODLOG_DFLT(INFO, "handle=%d our_ota_addr_type=%d our_ota_addr=",
-                desc->conn_handle, desc->our_ota_addr.type);
-    print_addr(desc->our_ota_addr.val);
-    MODLOG_DFLT(INFO, " our_id_addr_type=%d our_id_addr=",
-                desc->our_id_addr.type);
-    print_addr(desc->our_id_addr.val);
-    MODLOG_DFLT(INFO, " peer_ota_addr_type=%d peer_ota_addr=",
-                desc->peer_ota_addr.type);
-    print_addr(desc->peer_ota_addr.val);
-    MODLOG_DFLT(INFO, " peer_id_addr_type=%d peer_id_addr=",
-                desc->peer_id_addr.type);
-    print_addr(desc->peer_id_addr.val);
-    MODLOG_DFLT(INFO, " conn_itvl=%d conn_latency=%d supervision_timeout=%d "
-                "encrypted=%d authenticated=%d bonded=%d\n",
-                desc->conn_itvl, desc->conn_latency,
-                desc->supervision_timeout,
-                desc->sec_state.encrypted,
-                desc->sec_state.authenticated,
-                desc->sec_state.bonded);
-}
+static uint16_t ble_spp_svc_gatt_volreact_handle;
+static uint16_t ble_spp_svc_gatt_button1_handle;
+static uint16_t ble_spp_svc_gatt_button2_handle;
+static uint16_t ble_spp_svc_gatt_button3_handle;
+
+extern menu_item_t menu_item_volume_reactive;
 
 static void ble_spp_server_advertise(void){
     struct ble_gap_adv_params adv_params;
@@ -130,9 +63,10 @@ static void ble_spp_server_advertise(void){
     fields.name_is_complete = 1;
 
     fields.uuids16 = (ble_uuid16_t[]) {
-        BLE_UUID16_INIT(BLE_SVC_SPP_UUID16)
+        BLE_UUID16_INIT(BLE_SVC_VOLUME_CONTROL_UUID16),
+        BLE_UUID16_INIT(BLE_SVC_BATTERY_UUID16),
     };
-    fields.num_uuids16 = 1;
+    fields.num_uuids16 = 2;
     fields.uuids16_is_complete = 1;
 
     rc = ble_gap_adv_set_fields(&fields);
@@ -181,7 +115,6 @@ static int ble_spp_server_gap_event(struct ble_gap_event *event, void *arg){
         if (event->connect.status == 0) {
             rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
             assert(rc == 0);
-            ble_spp_server_print_conn_desc(&desc);
         }
         MODLOG_DFLT(INFO, "\n");
         if (event->connect.status != 0 || CONFIG_BT_NIMBLE_MAX_CONNECTIONS > 1) {
@@ -192,7 +125,6 @@ static int ble_spp_server_gap_event(struct ble_gap_event *event, void *arg){
 
     case BLE_GAP_EVENT_DISCONNECT:
         MODLOG_DFLT(INFO, "disconnect; reason=%d ", event->disconnect.reason);
-        ble_spp_server_print_conn_desc(&event->disconnect.conn);
         MODLOG_DFLT(INFO, "\n");
 
         conn_handle_subs[event->disconnect.conn.conn_handle] = false;
@@ -207,7 +139,6 @@ static int ble_spp_server_gap_event(struct ble_gap_event *event, void *arg){
                     event->conn_update.status);
         rc = ble_gap_conn_find(event->conn_update.conn_handle, &desc);
         assert(rc == 0);
-        ble_spp_server_print_conn_desc(&desc);
         MODLOG_DFLT(INFO, "\n");
         return 0;
 
@@ -263,9 +194,6 @@ static void ble_spp_server_on_sync(void){
     uint8_t addr_val[6] = {0};
     rc = ble_hs_id_copy_addr(own_addr_type, addr_val, NULL);
 
-    MODLOG_DFLT(INFO, "Device Address: ");
-    print_addr(addr_val);
-    MODLOG_DFLT(INFO, "\n");
     /* Begin advertising. */
     ble_spp_server_advertise();
 }
@@ -282,10 +210,12 @@ void ble_spp_server_host_task(void *param){
 static int  ble_svc_gatt_handler(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
     switch (ctxt->op) {
     case BLE_GATT_ACCESS_OP_READ_CHR:
+        printf("Callback for read,conn_handle = %x,attr_handle = %x", conn_handle, attr_handle);
         MODLOG_DFLT(INFO, "Callback for read");
         break;
 
     case BLE_GATT_ACCESS_OP_WRITE_CHR:
+        printf("Data received in write event,conn_handle = %x,attr_handle = %x", conn_handle, attr_handle);
         MODLOG_DFLT(INFO, "Data received in write event,conn_handle = %x,attr_handle = %x", conn_handle, attr_handle);
         break;
 
@@ -296,27 +226,184 @@ static int  ble_svc_gatt_handler(uint16_t conn_handle, uint16_t attr_handle, str
     return 0;
 }
 
+static int  ble_svc_gatt_battery_reader_handler(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    if(ctxt->op != BLE_GATT_ACCESS_OP_READ_CHR){
+        return 0;
+    }
+    
+    uint8_t battery_level = battery_get_level();
+    os_mbuf_append(ctxt->om, &battery_level, 1);
+    return 0;
+}
+
+static int  ble_svc_gatt_btn_read_handler(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    if(ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR){
+
+    }
+    
+    uint8_t battery_level = battery_get_level();
+    os_mbuf_append(ctxt->om, &battery_level, 1);
+    return 0;
+}
+
+static int  ble_svc_gatt_volreact_handler(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    if((int32_t)arg == 0){
+        if(ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR){
+            uint8_t vol_react = menu_item_volume_reactive.b ? 1 : 0;
+            os_mbuf_append(ctxt->om, &vol_react, 1);
+        }else if(ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR){
+            if(ctxt->om->om_len != 1){
+                return 0;
+            }
+            audioreactive_set((bool)(*ctxt->om->om_databuf));
+        }
+    }else if((int32_t)arg == 1){
+        if(ctxt->op != BLE_GATT_ACCESS_OP_WRITE_CHR){
+            return 0;
+        }
+        size_t str_len = ctxt->om->om_len;
+        char* str = malloc(str_len + 1);
+        str[str_len] = '\0';
+        memcpy(str, ctxt->om->om_data, str_len);
+        audioreactive_set_sliders(str);
+        free(str);
+    }
+    return 0;
+}
+
+static int  ble_svc_gatt_display_write_handler(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    if(ctxt->op != BLE_GATT_ACCESS_OP_WRITE_CHR){
+        return 0;
+    }
+    static uint8_t arr[(64*44+7)/8];
+    static size_t receive_len;
+
+    int32_t disp = (int32_t)arg;
+
+    if(disp == -1){
+        receive_len = 0;
+    }else if((receive_len + ctxt->om->om_len) <= sizeof(arr)){
+        memcpy(&arr[receive_len], ctxt->om->om_data, ctxt->om->om_len);
+        receive_len += ctxt->om->om_len;
+        
+        printf("size: %u\r\n", receive_len);
+        if(receive_len == sizeof(arr)){
+            display_set_icon(disp, arr);
+        }
+    }else{
+        receive_len = 0;
+    }
+    
+    return 0;
+}
+
 /* Define new custom service */
 static const struct ble_gatt_svc_def new_ble_svc_gatt_defs[] = {
     {
         /*** Service: SPP */
         .type = BLE_GATT_SVC_TYPE_PRIMARY,
-        .uuid = BLE_UUID16_DECLARE(BLE_SVC_SPP_UUID16),
+        .uuid = BLE_UUID16_DECLARE(BLE_SVC_VOLUME_CONTROL_UUID16),
         .characteristics = (struct ble_gatt_chr_def[])
         { {
-                /* Support SPP service */
-                .uuid = BLE_UUID16_DECLARE(BLE_SVC_SPP_CHR_UUID16),
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_VOLUME_CONTROL_CHR_UUID16),
                 .access_cb = ble_svc_gatt_handler,
-                .val_handle = &ble_spp_svc_gatt_read_val_handle,
-                .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+                .flags = BLE_GATT_CHR_F_NOTIFY,
+                .val_handle = &ble_spp_svc_gatt_read_val_handle3,
             },
             {
-                /* Support SPP service */
-                .uuid = BLE_UUID16_DECLARE(BLE_SVC_SPP_CHR_UUID16+1),
-                .access_cb = ble_svc_gatt_handler,
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_NEW_TRANSACTION_CHR_UUID16),
+                .access_cb = ble_svc_gatt_display_write_handler,
+                .arg = (void*)-1,
+                .flags = BLE_GATT_CHR_F_WRITE,
                 .val_handle = &ble_spp_svc_gatt_read_val_handle,
-                .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_NOTIFY,
-            }, {
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_DISPLAY1_CHR_UUID16),
+                .access_cb = ble_svc_gatt_display_write_handler,
+                .arg = (void*)0,
+                .flags = BLE_GATT_CHR_F_WRITE,
+                .val_handle = &ble_spp_svc_gatt_read_val_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_DISPLAY2_CHR_UUID16),
+                .access_cb = ble_svc_gatt_display_write_handler,
+                .arg = (void*)1,
+                .flags = BLE_GATT_CHR_F_WRITE,
+                .val_handle = &ble_spp_svc_gatt_read_val_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_DISPLAY3_CHR_UUID16),
+                .access_cb = ble_svc_gatt_display_write_handler,
+                .arg = (void*)2,
+                .flags = BLE_GATT_CHR_F_WRITE,
+                .val_handle = &ble_spp_svc_gatt_read_val_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_DISPLAY4_CHR_UUID16),
+                .access_cb = ble_svc_gatt_display_write_handler,
+                .arg = (void*)3,
+                .flags = BLE_GATT_CHR_F_WRITE,
+                .val_handle = &ble_spp_svc_gatt_read_val_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_DISPLAY5_CHR_UUID16),
+                .access_cb = ble_svc_gatt_display_write_handler,
+                .arg = (void*)4,
+                .flags = BLE_GATT_CHR_F_WRITE,
+                .val_handle = &ble_spp_svc_gatt_read_val_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_VOLUME_RACT_BOOL_CHR_UUID16),
+                .access_cb = ble_svc_gatt_volreact_handler,
+                .arg = (void*)0,
+                .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+                .val_handle = &ble_spp_svc_gatt_volreact_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_VOLUME_RACT_VAL_CHR_UUID16),
+                .access_cb = ble_svc_gatt_volreact_handler,
+                .arg = (void*)1,
+                .flags = BLE_GATT_CHR_F_WRITE,
+                .val_handle = &ble_spp_svc_gatt_read_val_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_BUTTON_1_CHR_UUID16),
+                .access_cb = ble_svc_gatt_btn_read_handler,
+                .arg = (void*)1,
+                .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+                .val_handle = &ble_spp_svc_gatt_button1_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_BUTTON_2_CHR_UUID16),
+                .access_cb = ble_svc_gatt_btn_read_handler,
+                .arg = (void*)2,
+                .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+                .val_handle = &ble_spp_svc_gatt_button2_handle,
+            },
+            {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_BUTTON_3_CHR_UUID16),
+                .access_cb = ble_svc_gatt_btn_read_handler,
+                .arg = (void*)3,
+                .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+                .val_handle = &ble_spp_svc_gatt_button3_handle,
+            },
+            {
+                0, /* No more characteristics */
+            }
+        },
+    },
+    {
+        /*** Service: SPP */
+        .type = BLE_GATT_SVC_TYPE_PRIMARY,
+        .uuid = BLE_UUID16_DECLARE(BLE_SVC_BATTERY_UUID16),
+        .characteristics = (struct ble_gatt_chr_def[])
+        { {
+                .uuid = BLE_UUID16_DECLARE(BLE_SVC_BATTERY_CHR_UUID16),
+                .access_cb = ble_svc_gatt_battery_reader_handler,
+                .val_handle = &ble_spp_svc_gatt_read_val_handle2,
+                .flags = BLE_GATT_CHR_F_READ,
+            },
+            {
                 0, /* No more characteristics */
             }
         },
@@ -377,26 +464,62 @@ int gatt_svr_init(void){
     return 0;
 }
 
-void ble_send_volume(const char* str){
-    int rc = 0;
+void ble_notification_volume_update( const char* str ){
+    if(!ble_is_connected()){
+        return;
+    }
     for (int i = 0; i <= CONFIG_BT_NIMBLE_MAX_CONNECTIONS; i++) {
         //Check if client has subscribed to notifications
         if (conn_handle_subs[i]) {
             struct os_mbuf *txom;
 
             txom = ble_hs_mbuf_from_flat(str, strlen(str));
-            rc = ble_gatts_notify_custom(i, ble_spp_svc_gatt_read_val_handle,
-                                            txom);
-            if (rc == 0) {
-                MODLOG_DFLT(INFO, "Notification sent successfully");
-            } else {
-                MODLOG_DFLT(INFO, "Error in sending notification rc = %d", rc);
-            }
+            ble_gatts_notify_custom(i, ble_spp_svc_gatt_read_val_handle3, txom);
         }
     }
 }
 
-void bluetooth_init(void){
+void ble_notification_volreactive_update( bool state ){
+    if(!ble_is_connected()){
+        return;
+    }
+    struct os_mbuf *txom;
+    uint8_t state_u8 = state ? 1 : 0;
+    
+    for (int i = 0; i <= CONFIG_BT_NIMBLE_MAX_CONNECTIONS; i++) {
+        txom = ble_hs_mbuf_from_flat(&state_u8, 1);
+        ble_gatts_notify_custom(i, ble_spp_svc_gatt_volreact_handle, txom);
+    }
+}
+
+void ble_notification_button_update( uint8_t button_num, bool state ){
+    if(!ble_is_connected()){
+        return;
+    }
+    struct os_mbuf *txom;
+    uint8_t btn_state_u8 = state ? 1 : 0;
+    
+    for (int i = 0; i <= CONFIG_BT_NIMBLE_MAX_CONNECTIONS; i++) {
+        txom = ble_hs_mbuf_from_flat(&btn_state_u8, 1);
+        switch (button_num){
+            case 0: ble_gatts_notify_custom(i, ble_spp_svc_gatt_button1_handle, txom); break;
+            case 1: ble_gatts_notify_custom(i, ble_spp_svc_gatt_button2_handle, txom); break;
+            case 2: ble_gatts_notify_custom(i, ble_spp_svc_gatt_button3_handle, txom); break;
+            default: break;
+        }
+    }
+}
+
+bool ble_is_connected(void){
+    for (int i = 0; i <= CONFIG_BT_NIMBLE_MAX_CONNECTIONS; i++) {
+        if (conn_handle_subs[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ble_init(void){
     int rc;
     esp_err_t ret = nimble_port_init();
     if (ret != ESP_OK) {
@@ -425,8 +548,6 @@ void bluetooth_init(void){
     /* Set the default device name. */
     rc = ble_svc_gap_device_name_set("AudMX");
     assert(rc == 0);
-
-    //xTaskCreate(ble_server_uart_task, "BLE_send", 1000, NULL, 4, NULL);
 
     nimble_port_freertos_init(ble_spp_server_host_task);
 }

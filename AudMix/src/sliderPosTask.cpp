@@ -43,10 +43,12 @@ void readPotentiometersButtonsTask( void *args ){
 				EventBits_t bits;
 				bits = xEventGroupClearBits(buttonsPressedEventGroup, (1 << i));
 				if(bits & (1 << i)){
+                    ble_notification_button_update(button_num,true);
 					std::cout << "BUTTON:pressed|" << button_num << std::endl;
 				}
 				bits = xEventGroupClearBits(buttonsReleasedEventGroup, (1 << i));
 				if(bits & (1 << i)){
+                    ble_notification_button_update(button_num,false);
 					std::cout << "BUTTON:released|" << button_num << std::endl;
 				}
 			}
@@ -70,15 +72,8 @@ void readPotentiometersButtonsTask( void *args ){
             }
 
             std::cout << pot_val_str;
-            ble_send_volume(pot_val_str.c_str());
-			// for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
-            //     std::cout << (int)positions_old[i];
-            //     if(i < (SLIDERS_COUNT - 1)){
-                    
-            //     }
-            // }
-
             std::cout << std::endl;
+            ble_notification_volume_update(pot_val_str.c_str());
             need_positions_send = false;
         }
         vTaskDelay(pdMS_TO_TICKS(2));

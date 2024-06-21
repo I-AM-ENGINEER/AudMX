@@ -3,6 +3,7 @@
 #include "FreeRTOS/semphr.h"
 #include "freertos/event_groups.h"
 #include "device.hpp"
+#include "menu.h"
 
 extern SemaphoreHandle_t displaysMutex;
 extern EventGroupHandle_t buttonsPressedEventGroup;

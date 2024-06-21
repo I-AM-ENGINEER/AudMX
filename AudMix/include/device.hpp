@@ -18,23 +18,6 @@
 #define ICON_WIDTH          60
 #define ICON_HEIGHT         44
 
-typedef enum {
-    MENU_ITEM_TYPE_BOOL,
-    MENU_ITEM_TYPE_INT,
-} menu_item_type_t;
-
-typedef struct {
-    char name[NVS_KEY_NAME_MAX_SIZE];
-    bool enable;
-    menu_item_type_t type;
-    union{
-        int32_t i32;
-        bool b;
-    };
-    int32_t i32_min = 0;
-    int32_t i32_max = 1;
-} menu_item_t;
-
 class Device{
     adc_oneshot_unit_handle_t _sliders_adc;
     void nvsInit( void );
@@ -47,7 +30,6 @@ class Device{
     void menuSaveAll( void );
     void menuUpdateSettings( void );
 
-    Battery battery;
     CRGB *_ws2812_output_buffer;
     CRGB _ws2812_buffer[STRIP_LED_COUNT];
     bool _displays_update = true;
@@ -58,10 +40,12 @@ class Device{
     uint8_t _button_select = -1;
     bool _is_audioreactive = false;
 public:
+    Battery battery;
     Slider sliders[SLIDERS_COUNT];
     bool isAudioReactive( void ){
         return _is_audioreactive;
     }
+    bool isAudioReactive( bool state );
     void init( void );
     void update( void );
 };
