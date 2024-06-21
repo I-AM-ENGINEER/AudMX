@@ -71,7 +71,9 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "cinttypes": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "bt_spp.h": "c",
+        "nimble_port_freertos.h": "c"
     },
     "idf.portWin": "COM12"
 }

@@ -4,6 +4,7 @@
 #include "FreeRTOS/semphr.h"
 #include "freertos/event_groups.h"
 #include "device.hpp"
+#include "bt_spp.h"
 
 extern EventGroupHandle_t buttonsPressedEventGroup;
 extern EventGroupHandle_t buttonsReleasedEventGroup;
@@ -59,12 +60,24 @@ void readPotentiometersButtonsTask( void *args ){
 		// Send position no faster than 100ms period
         if(((esp_timer_get_time() - timestamp) >= 100000LL) && need_positions_send){
             timestamp = esp_timer_get_time();
-			for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
-                std::cout << (int)positions_old[i];
-                if(i < (SLIDERS_COUNT - 1)){
-                    std::cout << "|";
+            std::string pot_val_str = "";
+
+            for (uint32_t i = 0; i < SLIDERS_COUNT; i++) {
+                pot_val_str += std::to_string(static_cast<int>(positions_old[i]));
+                if (i < SLIDERS_COUNT - 1) {
+                    pot_val_str += "|";
                 }
             }
+
+            std::cout << pot_val_str;
+            ble_send_volume(pot_val_str.c_str());
+			// for(uint32_t i = 0; i < SLIDERS_COUNT; i++){
+            //     std::cout << (int)positions_old[i];
+            //     if(i < (SLIDERS_COUNT - 1)){
+                    
+            //     }
+            // }
+
             std::cout << std::endl;
             need_positions_send = false;
         }
