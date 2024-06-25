@@ -15,14 +15,14 @@ class SocketVolume():
             return self.__count
         else:
             return -1.0
-    def __str__(self):
-        if (self.__call_back == None):
-            return str(self.__count)
-        else:
-            return "set callback"
+    # def __str__(self):
+    #     if (self.__call_back == None):
+    #         return str(self.__count)
+    #     else:
+    #         return "set callback"
 
 
-    def __init__(self, pid: int,num: int, call_back = None):
+    def __init__(self, pid: int, call_back = None):
         '''
         :param call_back: adr on func call_back(float)
         :param pid: proccess id for volumpid.exe

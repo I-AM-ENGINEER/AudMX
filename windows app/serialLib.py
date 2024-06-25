@@ -198,6 +198,14 @@ class SerCDC(seriall):
         self.__timer_cdc.start()
 
         # self.__serial.write(bytes(iner))
+    def clearnQuwewe(self):
+        self.__quwewe_write.clear()
+
+    def clearnSend(self):
+        self.__num_packeg = 99
+        self.__last_write = 0
+
+
 
     def __load64Byte(self):
         if self.__num_packeg < self.__count_packeg:
@@ -213,7 +221,10 @@ class SerCDC(seriall):
             if len(self.__quwewe_write) != 0:
                 self.__last_write = self.__quwewe_write.pop()
                 self.__count_packeg = int((len(self.__last_write[0]) / 64)) + 1
-                self.__timer_cdc.start()
+                if self.__count_packeg == 1:
+                    self.__load64Byte()
+                else:
+                    self.__timer_cdc.start()
             else:
                 self.__timer_cdc.stop()
 
