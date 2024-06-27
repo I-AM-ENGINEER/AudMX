@@ -56,10 +56,18 @@ void app_main() {
 }
 
 void batteryCheckTask( void *args ){
+    gpio_config_t pin_cfg = {
+        .pin_bit_mask = (1 << GPIO_NUM_7),
+        .mode = GPIO_MODE_INPUT,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+    };
+    gpio_config(&pin_cfg);
+    
     while (1){
         float battery_level = audMix.battery.readLevel();
         bool low_charge = battery_level < 0.2;
-        if(low_charge){
+        bool charger_connected = gpio_get_level(GPIO_NUM_7) == 1 ? true : false;
+        if(low_charge && !charger_connected){
             ws2812b_display_buffer[0].r = 127;
             ws2812b_display_buffer[0].g = 0;
             ws2812b_display_buffer[0].b = 0;
@@ -70,7 +78,6 @@ void batteryCheckTask( void *args ){
         ws2812b_display_buffer[0].b = 0;
         vTaskDelay(3000);
     }
-    
 }
 
 void sleepPing( void ){
