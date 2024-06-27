@@ -33,6 +33,7 @@ TaskHandle_t readPotentiometersButtonsTaskHandle;
 TaskHandle_t menuTaskHandle;
 
 void sleepTask( void *args );
+void batteryCheckTask( void *args );
 
 void app_main() {
     displaysMutex = xSemaphoreCreateMutex();
@@ -45,7 +46,7 @@ void app_main() {
 
     ble_init();
     xTaskCreate(sleepTask, 		                    "sleepTask", 		3000, NULL, 1,  NULL);
-
+    xTaskCreate(batteryCheckTask,                   "batteryTask", 	    1000, NULL, 2,  NULL);
     xTaskCreate(communicationTask,                  "consoleTask", 	    8000, NULL, 15, NULL);
     xTaskCreate(menuTask, 	                        "menuTask", 	    3000, NULL, 5,  &menuTaskHandle);
     xTaskCreate(stripAnimationTask,                 "stripAniTask", 	1000, NULL, 25, &stripAnimationTaskHandle);
@@ -54,6 +55,23 @@ void app_main() {
     xTaskCreate(stripTask, 		                    "stripTask", 		3000, NULL, 30, &stripTaskHandle);
 }
 
+void batteryCheckTask( void *args ){
+    while (1){
+        float battery_level = audMix.battery.readLevel();
+        bool low_charge = battery_level < 0.2;
+        if(low_charge){
+            ws2812b_display_buffer[0].r = 127;
+            ws2812b_display_buffer[0].g = 0;
+            ws2812b_display_buffer[0].b = 0;
+            vTaskDelay(100);
+        }
+        ws2812b_display_buffer[0].r = 0;
+        ws2812b_display_buffer[0].g = 0;
+        ws2812b_display_buffer[0].b = 0;
+        vTaskDelay(3000);
+    }
+    
+}
 
 void sleepPing( void ){
     last_ping = esp_timer_get_time();
@@ -66,7 +84,7 @@ void sleepTask( void *args ){
         if(ble_is_connected()){
             sleepPing();
         }
-        if((current_time - last_ping) > 30'000'000){
+        if((current_time - last_ping) > 3000000'000'000){
             vTaskSuspend(menuTaskHandle);
             vTaskSuspend(readPotentiometersButtonsTaskHandle);
             vTaskSuspend(stripAnimationTaskHandle);

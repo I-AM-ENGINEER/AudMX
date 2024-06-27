@@ -76,6 +76,7 @@ void Device::init( void ){
     menuInit();
     consoleInit();
     adcInit();
+    battery.init();
 
     gpio_config_t pullup_i2c = {
         .pin_bit_mask = (1 << GPIO_NUM_9),

@@ -5,9 +5,10 @@
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_adc/adc_oneshot.h"
+#include "esp_adc/adc_continuous.h"
 
 class Battery{
-    adc_oneshot_unit_handle_t   _adc_handle;
+    //adc_continuous_handle_t     _adc_handle;
     adc_unit_t                  _adc_unit    =    ADC_UNIT_2;
     adc_channel_t               _adc_channel = ADC_CHANNEL_0;
     adc_cali_handle_t           _adc_cali;

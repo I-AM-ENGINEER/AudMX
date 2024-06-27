@@ -210,12 +210,12 @@ void ble_spp_server_host_task(void *param){
 static int  ble_svc_gatt_handler(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
     switch (ctxt->op) {
     case BLE_GATT_ACCESS_OP_READ_CHR:
-        printf("Callback for read,conn_handle = %x,attr_handle = %x", conn_handle, attr_handle);
+        //printf("Callback for read,conn_handle = %x,attr_handle = %x", conn_handle, attr_handle);
         MODLOG_DFLT(INFO, "Callback for read");
         break;
 
     case BLE_GATT_ACCESS_OP_WRITE_CHR:
-        printf("Data received in write event,conn_handle = %x,attr_handle = %x", conn_handle, attr_handle);
+        //printf("Data received in write event,conn_handle = %x,attr_handle = %x", conn_handle, attr_handle);
         MODLOG_DFLT(INFO, "Data received in write event,conn_handle = %x,attr_handle = %x", conn_handle, attr_handle);
         break;
 
@@ -286,7 +286,7 @@ static int  ble_svc_gatt_display_write_handler(uint16_t conn_handle, uint16_t at
         memcpy(&arr[receive_len], ctxt->om->om_data, ctxt->om->om_len);
         receive_len += ctxt->om->om_len;
         
-        printf("size: %u\r\n", receive_len);
+        //printf("size: %u\r\n", receive_len);
         if(receive_len == sizeof(arr)){
             display_set_icon(disp, arr);
         }
