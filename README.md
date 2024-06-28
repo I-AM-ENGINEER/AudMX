@@ -10,7 +10,7 @@ Alternative for Deej ( https://github.com/omriharel/deej ) with more features
 
 Must be used with PC app for full features access ( https://github.com/Bobla-2/AudMx-win )
 
-Russian language paper: https://habr.com/ru/sandbox/new/
+Russian language paper: https://habr.com/ru/sandbox/220106/
 
 ![plot](./Images/photo_2024-06-28_22-19-05.jpg)
 
