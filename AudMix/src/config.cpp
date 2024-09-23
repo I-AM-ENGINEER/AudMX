@@ -23,7 +23,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
-        cfg.button_number   = 1; // -1 - system button, no send buttons events to PC, > 0 - sending if pressed
+        cfg.button_number   = -1; // -1 - system button, no send buttons events to PC, > 0 - sending if pressed
         sliders[0].config(cfg);
     }
 
@@ -38,7 +38,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
-        cfg.button_number   = 2;
+        cfg.button_number   = -1;
         sliders[1].config(cfg);
     }
 
@@ -68,7 +68,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
-        cfg.button_number   = -1;
+        cfg.button_number   = 2;
         sliders[3].config(cfg);
     }
 
@@ -83,7 +83,7 @@ void Device::configure( void ){
         cfg.led_count       = 10;
         cfg.double_leds     = true;
         cfg.led_strip       = ws2812b_display_buffer;
-        cfg.button_number   = -1;
+        cfg.button_number   = 1;
         sliders[4].config(cfg);
     }
 }

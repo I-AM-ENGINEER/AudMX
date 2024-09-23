@@ -44,12 +44,12 @@ void readPotentiometersButtonsTask( void *args ){
 				bits = xEventGroupClearBits(buttonsPressedEventGroup, (1 << i));
 				if(bits & (1 << i)){
                     ble_notification_button_update(button_num,true);
-					std::cout << "BUTTON:pressed|" << button_num << std::endl;
+					std::cout << "BUTTON|pressed|" << button_num << std::endl;
 				}
 				bits = xEventGroupClearBits(buttonsReleasedEventGroup, (1 << i));
 				if(bits & (1 << i)){
                     ble_notification_button_update(button_num,false);
-					std::cout << "BUTTON:released|" << button_num << std::endl;
+					std::cout << "BUTTON|released|" << button_num << std::endl;
 				}
 			}
         }
