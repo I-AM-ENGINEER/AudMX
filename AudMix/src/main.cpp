@@ -91,7 +91,7 @@ void sleepTask( void *args ){
         if(ble_is_connected()){
             sleepPing();
         }
-        if((current_time - last_ping) > 3000000'000'000){
+        if((current_time - last_ping) > 30'000'000){
             vTaskSuspend(menuTaskHandle);
             vTaskSuspend(readPotentiometersButtonsTaskHandle);
             vTaskSuspend(stripAnimationTaskHandle);
